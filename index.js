@@ -8,8 +8,13 @@ var discoverAddresses = require('./network').discoverAddresses
 var fetchTransactions = require('./network').fetchTransactions
 var validate = require('./validator')
 
-function Wallet(externalAccount, internalAccount, networkName, done) {
+function Wallet(externalAccount, internalAccount, networkName, done, balanceDone) {
   if(arguments.length === 0) return this;
+  if(balanceDone == null) {
+    balanceDone = function() {
+      // no-op
+    }
+  }
 
   try {
     if(typeof externalAccount === 'string') {
@@ -26,8 +31,8 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
 
     assert(this.externalAccount != null, 'externalAccount cannot be null')
     assert(this.internalAccount != null, 'internalAccount cannot be null')
-  } catch(e) {
-    return done(e)
+  } catch(err) {
+    return doneError(err)
   }
 
   this.networkName = networkName
@@ -36,8 +41,12 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
 
   var that = this
 
-  discoverAddresses(this.api, this.externalAccount, this.internalAccount, function(err, addresses, changeAddresses) {
-    if(err) return done(err);
+  discoverAddresses(this.api, this.externalAccount, this.internalAccount, function(err, addresses, changeAddresses, balance) {
+    if(err) {
+      return doneError(err);
+    }
+
+    balanceDone(null, balance)
 
     that.addresses = addresses
     that.changeAddresses = changeAddresses
@@ -54,6 +63,11 @@ function Wallet(externalAccount, internalAccount, networkName, done) {
       done(null, that)
     })
   })
+
+  function doneError(err) {
+    done(err)
+    balanceDone(err)
+  }
 }
 
 Wallet.prototype.getBalance = function(minConf) {

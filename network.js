@@ -1,30 +1,36 @@
 "use strict";
 
 var bitcoin = require('bitcoinjs-lib')
-var discover = require('bip32-utils').discovery
+var bip32utils = require('bip32-utils')
 var async = require('async')
 
 function discoverAddressesForAccounts(api, externalAccount, internalAccount, callback) {
   var functions = [externalAccount, internalAccount].map(function(account) {
-    return function(cb) { discoverUsedAddresses(account, api, cb) }
+    var iterator = new bip32utils.AddressIterator(account)
+    return function(cb) { discoverUsedAddresses(iterator, api, cb) }
   })
 
   async.parallel(functions, function(err, results) {
     if(err) return callback(err);
 
-    callback(null, results[0], results[1])
+    callback(null, results[0].addresses, results[1].addresses,
+             results[0].balance + results[1].balance)
   })
 }
 
-function discoverUsedAddresses(account, api, done) {
+function discoverUsedAddresses(iterator, api, done) {
   var usedAddresses = []
+  var balance = 0
 
-  discover(account, 5, function(addresses, callback) {
-
+  bip32utils.discovery(iterator, 5, function(addresses, callback) {
     usedAddresses = usedAddresses.concat(addresses)
 
     api.addresses.summary(addresses, function(err, results) {
       if (err) return callback(err);
+
+      balance = results.reduce(function(total, address) {
+        return total += address.balance
+      }, 0)
 
       callback(undefined, results.map(function(result) {
         return result.txCount > 0
@@ -35,7 +41,7 @@ function discoverUsedAddresses(account, api, done) {
 
     console.info('Discovered ' + k + ' addresses')
 
-    done(null, usedAddresses.slice(0, k))
+    done(null, { addresses: usedAddresses.slice(0, k), balance: balance })
   })
 }
 

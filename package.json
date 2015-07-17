@@ -1,13 +1,13 @@
 {
   "name": "cs-wallet",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "",
   "main": "index.js",
   "dependencies": {
     "async": "^0.9.0",
-    "bip32-utils": "0.0.1",
+    "bip32-utils": "^0.4.2",
     "bitcoin-tx-graph": "git://github.com/skyjam/bitcoin-tx-graph.git",
-    "bitcoinjs-lib": "^1.2.0",
+    "bitcoinjs-lib": "^1.5.7",
     "cs-blockr": "git://github.com/skyjam/cs-blockr.git",
     "envify": "^3.3.1"
   },
