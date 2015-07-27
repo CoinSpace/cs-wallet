@@ -3,6 +3,7 @@
 var bitcoin = require('bitcoinjs-lib')
 var bip32utils = require('bip32-utils')
 var async = require('async')
+var Big = require('big.js')
 
 function discoverAddressesForAccounts(api, externalAccount, internalAccount, callback) {
   var functions = [externalAccount, internalAccount].map(function(account) {
@@ -14,12 +15,14 @@ function discoverAddressesForAccounts(api, externalAccount, internalAccount, cal
     if(err) return callback(err);
 
     callback(null, results[0].addresses, results[1].addresses,
-             results[0].balance + results[1].balance)
+      btcToSatoshi(results[0].balance + results[1].balance),
+      results[0].unspentAddresses.concat(results[1].unspentAddresses))
   })
 }
 
 function discoverUsedAddresses(iterator, api, done) {
   var usedAddresses = []
+  var unspentAddresses = []
   var balance = 0
 
   bip32utils.discovery(iterator, 5, function(addresses, callback) {
@@ -28,7 +31,10 @@ function discoverUsedAddresses(iterator, api, done) {
     api.addresses.summary(addresses, function(err, results) {
       if (err) return callback(err);
 
-      balance = results.reduce(function(total, address) {
+      balance += results.reduce(function(total, address) {
+        if(address.balance > 0) {
+          unspentAddresses.push(address.address)
+        }
         return total += address.balance
       }, 0)
 
@@ -41,7 +47,11 @@ function discoverUsedAddresses(iterator, api, done) {
 
     console.info('Discovered ' + k + ' addresses')
 
-    done(null, { addresses: usedAddresses.slice(0, k), balance: balance })
+    done(null, {
+      addresses: usedAddresses.slice(0, k),
+      balance: balance,
+      unspentAddresses: unspentAddresses
+    })
   })
 }
 
@@ -57,6 +67,23 @@ function fetchTransactions(api, addresses, done) {
       parsed = parseTransactions(transactions, parsed)
       done(null, parsed.txs, parsed.metadata)
     })
+  })
+}
+
+// TODO: get rid of this once cb-blocr is updated to return satoshi
+function btcToSatoshi(btc) {
+  return parseInt(new Big(btc).times(100000000), 10)
+}
+
+function fetchUnspents(api, addresses, done) {
+  api.addresses.unspents(addresses, function(err, unspents) {
+    if(err) return done(err);
+
+    unspents.forEach(function(unspent){
+      unspent.value = btcToSatoshi(unspent.value)
+    })
+
+    done(null, unspents)
   })
 }
 
@@ -93,5 +120,6 @@ function getAdditionalTxIds(txs) {
 
 module.exports = {
   discoverAddresses: discoverAddressesForAccounts,
-  fetchTransactions: fetchTransactions
+  fetchTransactions: fetchTransactions,
+  fetchUnspents: fetchUnspents
 }

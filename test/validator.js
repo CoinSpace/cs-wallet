@@ -81,4 +81,38 @@ describe('validator', function(){
       })
     })
   })
+
+  describe('utxos', function(){
+    it('throws an error when it is not an array', function(){
+      assert.throws(function() { validate.utxos({}) })
+      assert.throws(function() { validate.utxos(1) })
+      assert.throws(function() { validate.utxos('foobar') })
+    });
+
+    ['txId', 'address', 'value', 'vout', 'confirmations'].forEach(function(field){
+      describe('when ' + field + ' is missing', function(){
+        it('throws an error', function(){
+          assert.throws(function() {
+            var utxo = getUtxo()
+            delete utxo[field]
+            validate.utxos([utxo])
+          }, function(e) {
+            var expectedMessage = field + " field"
+            assert(e.message.indexOf(expectedMessage) > 0,
+              "expect error message to contain: " + expectedMessage + ", but got: " + e.message)
+            return true
+          })
+        })
+      })
+    })
+
+    function getUtxo() {
+      return {
+        txId: '121954538a10eb7a59e319745b97302c2cf6ce1e159fe0de17f6038963a68fac',
+        address: '1Ao9jfhQgsfHT97qsQ3GDnQ9czJnFaXNyw',
+        value: 378340414,
+        vout: 0
+      }
+    }
+  })
 })

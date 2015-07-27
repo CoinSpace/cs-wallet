@@ -35,7 +35,19 @@ function postCreateTx(needed, has, hasIncludingZeroConf) {
   }
 }
 
+function utxos(utxos) {
+  assert(Array.isArray(utxos), 'Expect utxos to be an array')
+  utxos.forEach(function(unspent) {
+    assert(unspent.txId != null && typeof unspent.txId === 'string', 'Expect every utxo has a txId field (string)')
+    assert(unspent.address != null && typeof unspent.address === 'string', 'Expect every utxo has an address field (string)')
+    assert(unspent.value != null && typeof unspent.value === 'number', 'Expect every utxo has an value field (number)')
+    assert(unspent.vout != null && typeof unspent.vout === 'number', 'Expect every utxo has a vout field (number)')
+    assert(unspent.confirmations != null && typeof unspent.confirmations === 'number', 'Expect every utxo has a confirmations field (number)')
+  })
+}
+
 module.exports = {
   preCreateTx: preCreateTx,
-  postCreateTx: postCreateTx
+  postCreateTx: postCreateTx,
+  utxos: utxos
 }

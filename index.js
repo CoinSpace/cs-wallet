@@ -6,10 +6,16 @@ var TxGraph = require('bitcoin-tx-graph')
 var assert = require('assert')
 var discoverAddresses = require('./network').discoverAddresses
 var fetchTransactions = require('./network').fetchTransactions
+var fetchUnspents = require('./network').fetchUnspents
 var validate = require('./validator')
 
-function Wallet(externalAccount, internalAccount, networkName, done, balanceDone) {
+function Wallet(externalAccount, internalAccount, networkName, done, unspentsDone, balanceDone) {
   if(arguments.length === 0) return this;
+  if(unspentsDone == null) {
+    unspentsDone = function() {
+      // no-op
+    }
+  }
   if(balanceDone == null) {
     balanceDone = function() {
       // no-op
@@ -41,15 +47,17 @@ function Wallet(externalAccount, internalAccount, networkName, done, balanceDone
 
   var that = this
 
-  discoverAddresses(this.api, this.externalAccount, this.internalAccount, function(err, addresses, changeAddresses, balance) {
+  discoverAddresses(this.api, this.externalAccount, this.internalAccount,
+                    function(err, addresses, changeAddresses, balance, unspentAddresses) {
     if(err) {
       return doneError(err);
     }
 
-    balanceDone(null, balance)
-
     that.addresses = addresses
     that.changeAddresses = changeAddresses
+
+    balanceDone(null, balance)
+    fetchUnspents(that.api, unspentAddresses, unspentsDone)
 
     var addresses = addresses.concat(changeAddresses)
     fetchTransactions(that.api, addresses, function(err, txs, metadata) {
@@ -66,6 +74,7 @@ function Wallet(externalAccount, internalAccount, networkName, done, balanceDone
 
   function doneError(err) {
     done(err)
+    unspentsDone(err)
     balanceDone(err)
   }
 }
@@ -151,13 +160,25 @@ Wallet.prototype.processTx = function(txs) {
   }
 }
 
-Wallet.prototype.createTx = function(to, value, fee, minConf) {
+Wallet.prototype.createTx = function(to, value, fee, minConf, unspents) {
   var network = bitcoin.networks[this.networkName]
   validate.preCreateTx(to, value, network)
 
-  var myAddresses = this.addresses.concat(this.changeAddresses)
-  if(minConf == null) minConf = 1
-  var utxos = getCandidateOutputs(this.txGraph.getAllNodes(), this.txMetadata, network, myAddresses, minConf)
+  if(minConf == null) {
+    minConf = 1
+  }
+
+  var utxos = null
+  if(unspents != null) {
+    validate.utxos(unspents)
+    utxos = unspents.filter(function(unspent) {
+      return unspent.confirmations >= minConf
+    })
+  } else {
+    var myAddresses = this.addresses.concat(this.changeAddresses)
+    utxos = getCandidateOutputs(this.txGraph.getAllNodes(), this.txMetadata, network, myAddresses, minConf)
+  }
+
   utxos = utxos.sort(function(o1, o2){
     return o2.value - o1.value
   })
@@ -171,7 +192,7 @@ Wallet.prototype.createTx = function(to, value, fee, minConf) {
 
   var that = this
   utxos.some(function(unspent) {
-    builder.addInput(unspent.id, unspent.index)
+    builder.addInput(unspent.txId, unspent.vout)
     addresses.push(unspent.address)
 
     var estimatedFee
@@ -224,10 +245,10 @@ function getCandidateOutputs(allNodes, metadata, network, myAddresses, minConf) 
       var address = bitcoin.Address.fromOutputScript(out.script, network).toString()
       if(myAddresses.indexOf(address) >= 0 && node.nextNodes[i] == null) {
         unspentOutputs.push({
-          id: node.id,
+          txId: node.id,
           address: address,
           value: out.value,
-          index: i
+          vout: i
         })
       }
     })
