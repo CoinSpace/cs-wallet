@@ -7,7 +7,7 @@ var Big = require('big.js')
 
 function discoverAddressesForAccounts(api, externalAccount, internalAccount, callback) {
   var functions = [externalAccount, internalAccount].map(function(account) {
-    var iterator = new bip32utils.AddressIterator(account)
+    var iterator = new bip32utils.Chain(account)
     return function(cb) { discoverUsedAddresses(iterator, api, cb) }
   })
 
