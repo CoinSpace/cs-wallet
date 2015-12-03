@@ -10,6 +10,7 @@
     "bitcoin-tx-graph": "git://github.com/skyjam/bitcoin-tx-graph.git",
     "bitcoinjs-lib": "^1.5.7",
     "cs-blockr": "git://github.com/skyjam/cs-blockr.git",
+    "cs-insight": "git://github.com/skyjam/cs-insight.git",
     "envify": "^3.3.1"
   },
   "devDependencies": {
