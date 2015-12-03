@@ -1,5 +1,5 @@
 var assert = require('assert')
-var validate = require('../validator')
+var validate = require('../lib/validator')
 var networks = require('bitcoinjs-lib').networks
 
 describe('validator', function(){
