@@ -13,7 +13,10 @@ var fixtures = require('./wallet')
 var addressFixtures = require('./addresses')
 var balanceFixtures = require('./balance')
 var history = require('./history')
+var rewire = require('rewire')
 var Wallet = require('../')
+
+var noop = function() {}
 
 describe('Common Blockchain Wallet', function() {
   var externalAccount
@@ -24,22 +27,52 @@ describe('Common Blockchain Wallet', function() {
     internalAccount = "tprv8eTJwLvUafTQVZgNArJSWQgwu6vtBgEzB9LACG4GPhwofFCSaCMzqj5eYqmZ1qmTJVmsa82EfUqkdpUtMmnKp5RJaUdc1KCjzSUc3nRsoXf"
   })
 
-  it('should setup insight API wrapper if it is define in process env', function(done) {
-    this.timeout(40000)
-    process.env.API_WRAPPER = 'insight'
-    var wallet = new Wallet(externalAccount, internalAccount, 'testnet', function() {
-      done()
-    })
-    assert(wallet.api instanceof require('cs-insight'))
-  })
+  describe('process env', function() {
+    describe('', function() {
+      var apiUrl = null
 
-  it('should setup blockr API wrapper by default', function(done) {
-    this.timeout(40000)
-    process.env.API_WRAPPER = ''
-    var wallet = new Wallet(externalAccount, internalAccount, 'testnet', function() {
-      done()
+      beforeEach(function() {
+        Wallet = rewire('../lib/wallet')
+        Wallet.__set__('getAPI', function(network, proxy, apiWrapperUrl) {
+          apiUrl = apiWrapperUrl
+
+          return {
+            addresses: {
+              summary: noop
+            }
+          }
+        })
+      })
+
+      it('should setup wrapper api url by process env', function() {
+        process.env.API_WRAPPER_URL = 'hello-world'
+        new Wallet(externalAccount, internalAccount)
+        process.env.API_WRAPPER_URL = undefined
+        assert.equal(apiUrl, 'hello-world')
+      })
+
+      afterEach(function() {
+        Wallet = require('../')
+      })
     })
-    assert(wallet.api instanceof require('cs-blockr'))
+
+    it('should setup insight API wrapper if it is define in process env', function(done) {
+      this.timeout(40000)
+      process.env.API_WRAPPER = 'insight'
+      var wallet = new Wallet(externalAccount, internalAccount, 'testnet', function() {
+        done()
+      })
+      assert(wallet.api instanceof require('cs-insight'))
+    })
+
+    it('should setup blockr API wrapper by default', function(done) {
+      this.timeout(40000)
+      process.env.API_WRAPPER = ''
+      var wallet = new Wallet(externalAccount, internalAccount, 'testnet', function() {
+        done()
+      })
+      assert(wallet.api instanceof require('cs-blockr'))
+    })
   })
 
   describe('network dependent tests', function() {
