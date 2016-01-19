@@ -1,4 +1,4 @@
-CS-Wallet [![Build Status](https://travis-ci.org/skyjam/cs-wallet.svg)](https://travis-ci.org/skyjam/cs-wallet)
+CS-Wallet [![Build Status](https://travis-ci.org/CoinSpace/cs-wallet.svg)](https://travis-ci.org/CoinSpace/cs-wallet)
 =========
 
-Wallet for [CoinSpace](https://github.com/skyjam/CoinSpace) app.
+Wallet for [CoinSpace](https://github.com/CoinSpace/CoinSpace) app.
