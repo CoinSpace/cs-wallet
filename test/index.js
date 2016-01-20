@@ -57,7 +57,7 @@ describe('Common Blockchain Wallet', function() {
     })
 
     it('should setup insight API wrapper if it is define in process env', function(done) {
-      this.timeout(40000)
+      this.timeout(100000)
       process.env.API_WRAPPER = 'insight'
       var wallet = new Wallet(externalAccount, internalAccount, 'testnet', function() {
         done()
@@ -66,7 +66,7 @@ describe('Common Blockchain Wallet', function() {
     })
 
     it('should setup blockr API wrapper by default', function(done) {
-      this.timeout(40000)
+      this.timeout(100000)
       process.env.API_WRAPPER = ''
       var wallet = new Wallet(externalAccount, internalAccount, 'testnet', function() {
         done()
@@ -76,7 +76,7 @@ describe('Common Blockchain Wallet', function() {
   })
 
   describe('network dependent tests', function() {
-    this.timeout(40000)
+    this.timeout(100000)
     var wallet
     var addresses = ["n2DTZtbDbNAX315g3vtUdLKLWeAGtLUKd5","n3Ry7ra8hFmhPWdFJJNY5YBFNyED8T2F6L","mjuRrrDwYY4qfK5Cea3PcaqE1Wix7ieBWM"]
     var changeAddresses = ['mk1iSBkdVGkj4rHsgvnNj78sViw8Pq2KBY', 'n4QqWKg6kzgDGtLybDcHCMVPLZuJgT3MZr', 'mk3vi2jCLzzxCUMxvrgL2zumS3CQGedWqN', 'mhoDWJcxYfmKAu57trrhaG9uHWPx5q8W9z', 'mqsxmdRAZ52UUbmrsovDvLuAmFxyXFiaE5', 'mtmw3orgdjNhCJSCCVMLFMf38txz6CzHB9', 'n38DfSrxRr9BoydsXt6NpQDUWAhZCoGWkb', 'muAYGwrAkM4iAAWyGWt9bvat6hGiYAaN1t']
