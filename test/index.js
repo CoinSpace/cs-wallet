@@ -479,7 +479,7 @@ describe('Common Blockchain Wallet', function() {
           it('includes the specified address and amount', function(){
             var tx = readOnlyWallet.createTx(to, value, null, null, utxos)
 
-            assert.equal(tx.outs.length, 1)
+            assert.equal(tx.outs.length, 2)
             var out = tx.outs[0]
             var outAddress = Address.fromOutputScript(out.script, testnet)
 
@@ -580,7 +580,7 @@ describe('Common Blockchain Wallet', function() {
           it('includes the specified address and amount', function(){
             var tx = readOnlyWallet.createTx(to, value)
 
-            assert.equal(tx.outs.length, 1)
+            assert.equal(tx.outs.length, 2)
             var out = tx.outs[0]
             var outAddress = Address.fromOutputScript(out.script, testnet)
 
@@ -691,11 +691,50 @@ describe('Common Blockchain Wallet', function() {
           })
 
           it('errors on insufficient funds', function(){
-            assert.throws(function() { readOnlyWallet.createTx(to, 1400001) })
+            assert.throws(function() { readOnlyWallet.createTx(to, 1405001) })
           })
         })
       })
 
+    })
+
+    describe('estimateFees', function() {
+      var address, to
+
+      before(function(){
+        readOnlyWallet = Wallet.deserialize(JSON.stringify(fixtures)) // reset wallet
+        
+        to = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs'
+        address = readOnlyWallet.addresses[0]
+
+        var pair0 = createTxPair(address, 10000) 
+        var pair1 = createTxPair(address, 50000)
+
+        readOnlyWallet.processTx([
+          {tx: pair0.tx, confirmations: 1}, {tx: pair0.prevTx},
+          {tx: pair1.tx, confirmations: 1}, {tx: pair1.prevTx}
+        ])
+
+        function createTxPair(address, amount) {
+          var prevTx = new Transaction()
+          prevTx.addInput(new Transaction(), 0)
+          prevTx.addOutput(to, amount)
+
+          var tx = new Transaction()
+          tx.addInput(prevTx, 0)
+          tx.addOutput(address, amount)
+
+          return { prevTx: prevTx, tx: tx }
+        }
+      })
+
+      it('calculates it correctly with single tx input', function() {
+        assert.deepEqual(readOnlyWallet.estimateFees(to, 20000, [10000]), [2260])
+      })
+
+      it('calculates it correctly with multiple tx inputs', function() {
+        assert.deepEqual(readOnlyWallet.estimateFees(to, 50000, [10000, 200000]), [3740, 74800])
+      })
     })
 
     describe('sendTx', function() {
