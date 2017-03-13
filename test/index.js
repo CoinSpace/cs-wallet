@@ -33,7 +33,7 @@ describe('Common Blockchain Wallet', function() {
 
       beforeEach(function() {
         Wallet = rewire('../lib/wallet')
-        Wallet.__set__('getAPI', function(network, proxy, apiWrapperUrl) {
+        Wallet.__set__('getAPI', function(network, apiWrapperUrl) {
           apiUrl = apiWrapperUrl
 
           return {
@@ -167,11 +167,11 @@ describe('Common Blockchain Wallet', function() {
           assert.equal(wallet.api.getProxyURL(), undefined)
         })
 
-        it('api uses a proxy url passed in as an environment variable', function(done) {
+        it('api uses a proxy url passed in as an environment variable (blockr)', function(done) {
           var url = 'https://proxy.coin.space/?url='
-          process.env.PROXY_URL = url
+          process.env.BLOCKR_PROXY_URL = url
           var wallet = new Wallet(externalAccount, internalAccount, 'testnet', function(err, w) {
-            process.env.PROXY_URL = undefined
+            process.env.BLOCKR_PROXY_URL = undefined
             assert.ifError(err)
 
             assert.equal(wallet.api.getProxyURL(), url)
@@ -703,7 +703,7 @@ describe('Common Blockchain Wallet', function() {
 
       before(function(){
         readOnlyWallet = Wallet.deserialize(JSON.stringify(fixtures)) // reset wallet
-        
+
         to = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs'
         address = readOnlyWallet.addresses[0]
 
