@@ -1,5 +1,5 @@
 var assert = require('assert')
-var API = require('cs-blockr')
+var API = require('cs-insight')
 var sinon = require('sinon')
 var TxGraph = require('bitcoin-tx-graph')
 var bitcoin = require('bitcoinjs-lib')
@@ -28,60 +28,38 @@ describe('Common Blockchain Wallet', function() {
   })
 
   describe('process env', function() {
-    describe('', function() {
-      var apiUrl = null
-
-      beforeEach(function() {
-        Wallet = rewire('../lib/wallet')
-        Wallet.__set__('getAPI', function(network, apiWrapperUrl) {
-          apiUrl = apiWrapperUrl
-
-          return {
-            addresses: {
-              summary: noop
-            }
-          }
-        })
+    it('should setup wrapper api url by process env (bitcoin)', function(done) {
+      process.env.API_BTC_URL = 'hello-world'
+      var wallet = new Wallet(externalAccount, internalAccount, 'bitcoin', function() {
+        done()
       })
-
-      it('should setup wrapper api url by process env', function() {
-        process.env.API_WRAPPER_URL = 'hello-world'
-        new Wallet(externalAccount, internalAccount)
-        process.env.API_WRAPPER_URL = undefined
-        assert.equal(apiUrl, 'hello-world')
-      })
-
-      afterEach(function() {
-        Wallet = require('../')
-      })
+      process.env.API_BTC_URL = undefined
+      assert.equal(wallet.api.apiURL, 'hello-world')
     })
 
-    it('should setup insight API wrapper if it is define in process env', function(done) {
+    it('should setup wrapper api url by process env (litecoin)', function(done) {
+      process.env.API_LTC_URL = 'hello-lite-world'
+      var wallet = new Wallet(externalAccount, internalAccount, 'litecoin', function() {
+        done()
+      })
+      process.env.API_LTC_URL = undefined
+      assert.equal(wallet.api.apiURL, 'hello-lite-world')
+    })
+
+    it('should setup insight API wrapper', function(done) {
       this.timeout(100000)
-      process.env.API_WRAPPER = 'insight'
       var wallet = new Wallet(externalAccount, internalAccount, 'testnet', function() {
         done()
       })
       assert(wallet.api instanceof require('cs-insight'))
     })
-
-    it('should setup blockr API wrapper by default', function(done) {
-      this.timeout(100000)
-      process.env.API_WRAPPER = ''
-      var wallet = new Wallet(externalAccount, internalAccount, 'testnet', function() {
-        done()
-      })
-      assert(wallet.api instanceof require('cs-blockr'))
-    })
   })
 
-  describe('network dependent tests', function() {
+  describe.skip('network dependent tests', function() {
     this.timeout(100000)
     var wallet
     var addresses = ["n2DTZtbDbNAX315g3vtUdLKLWeAGtLUKd5","n3Ry7ra8hFmhPWdFJJNY5YBFNyED8T2F6L","mjuRrrDwYY4qfK5Cea3PcaqE1Wix7ieBWM"]
     var changeAddresses = ['mk1iSBkdVGkj4rHsgvnNj78sViw8Pq2KBY', 'n4QqWKg6kzgDGtLybDcHCMVPLZuJgT3MZr', 'mk3vi2jCLzzxCUMxvrgL2zumS3CQGedWqN', 'mhoDWJcxYfmKAu57trrhaG9uHWPx5q8W9z', 'mqsxmdRAZ52UUbmrsovDvLuAmFxyXFiaE5', 'mtmw3orgdjNhCJSCCVMLFMf38txz6CzHB9', 'n38DfSrxRr9BoydsXt6NpQDUWAhZCoGWkb', 'muAYGwrAkM4iAAWyGWt9bvat6hGiYAaN1t']
-
-    process.env.API_WRAPPER = ''
 
     before(function(done) {
       wallet = new Wallet(externalAccount, internalAccount, 'testnet', done)
@@ -169,9 +147,9 @@ describe('Common Blockchain Wallet', function() {
 
         it('api uses a proxy url passed in as an environment variable (blockr)', function(done) {
           var url = 'https://proxy.coin.space/?url='
-          process.env.BLOCKR_PROXY_URL = url
+          process.env.INSIGHT_PROXY_URL = url
           var wallet = new Wallet(externalAccount, internalAccount, 'testnet', function(err, w) {
-            process.env.BLOCKR_PROXY_URL = undefined
+            process.env.INSIGHT_PROXY_URL = undefined
             assert.ifError(err)
 
             assert.equal(wallet.api.getProxyURL(), url)
