@@ -1,6 +1,6 @@
 {
   "name": "cs-wallet",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "",
   "main": "index.js",
   "dependencies": {
@@ -9,7 +9,7 @@
     "bip32-utils": "^0.6.2",
     "bitcoin-tx-graph": "git://github.com/CoinSpace/bitcoin-tx-graph.git#v4.0.5",
     "bitcoinjs-lib": "^1.5.7",
-    "cs-insight": "git://github.com/CoinSpace/cs-insight.git#v3.1.2",
+    "cs-insight": "git://github.com/CoinSpace/cs-insight.git#v3.1.3",
     "envify": "^3.3.1",
     "rewire": "^2.5.1"
   },
