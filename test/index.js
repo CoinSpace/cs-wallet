@@ -1,7 +1,7 @@
 var assert = require('assert')
 var API = require('cs-insight')
 var sinon = require('sinon')
-var TxGraph = require('bitcoin-tx-graph')
+var async = require('async')
 var bitcoin = require('bitcoinjs-lib')
 var Transaction = bitcoin.Transaction
 var TransactionBuilder = bitcoin.TransactionBuilder
@@ -11,6 +11,7 @@ var testnet = bitcoin.networks.testnet
 var bufferutils = bitcoin.bufferutils
 var fixtures = require('./wallet')
 var addressFixtures = require('./addresses')
+var transactionsFixtures = require('./transactions')
 var balanceFixtures = require('./balance')
 var history = require('./history')
 var rewire = require('rewire')
@@ -192,10 +193,15 @@ describe('Common Blockchain Wallet', function() {
     var readOnlyWallet
     var addresses = addressFixtures.addresses
     var changeAddresses = addressFixtures.changeAddresses
+    var sandbox = sinon.sandbox.create();
 
     before(function() {
       // this should be treated as a convenient read-only wallet
       readOnlyWallet = Wallet.deserialize(JSON.stringify(fixtures))
+    })
+
+    afterEach(function(){
+      sandbox.restore();
     })
 
     describe('getBalance', function() {
@@ -203,46 +209,39 @@ describe('Common Blockchain Wallet', function() {
         assert.equal(readOnlyWallet.getBalance(), 0)
       })
 
-      it('calculates it correctly when one of the head transactions has value 0', function() {
+      it('calculates it correctly when one of the head transactions has value 0', function(done) {
         var myWallet = Wallet.deserialize(JSON.stringify(fixtures))
-        var fundingTx = fundAddressZero(myWallet, 200000)
 
+        sandbox.stub(myWallet.api.transactions, 'get').callsArgWith(2, null, [transactionsFixtures.fundedAddressZero])
+
+        fundAddressZero(myWallet, function(err, fundingTx) {
+          if (err) return done(err);
+
+          myWallet.api.transactions.get.restore()
+          sandbox.stub(myWallet.api.transactions, 'get').callsArgWith(2, null, [transactionsFixtures.fundedChangeAddress])
+
+          var tx = new Transaction()
+          tx.addInput(fundingTx, 0)
+          tx.addOutput(myWallet.changeAddresses[0], 200000)
+
+          myWallet.processTx(tx, function(err) {
+            if (err) return done(err);
+
+            assert.equal(myWallet.getBalance(), 200000)
+            done()
+          })
+        })
+      })
+
+      function fundAddressZero(wallet, done) {
         var tx = new Transaction()
-        tx.addInput(fundingTx, 0)
-        tx.addOutput(myWallet.changeAddresses[0], 200000)
+        tx.addInput(new Transaction(), 0)
+        tx.addOutput(wallet.addresses[0], 200000)
 
-        myWallet.processTx(tx)
-
-        assert.equal(myWallet.getBalance(), 200000)
-      })
-
-      it('returns balance from txs with confirmations no less than specified minConf', function() {
-        var myWallet = Wallet.deserialize(JSON.stringify(fixtures))
-        fundAddressZero(myWallet, 200000)
-
-        assert.equal(myWallet.getBalance(10342), 0)
-        assert.equal(myWallet.getBalance(3), 200000)
-      })
-
-      it('does not miss pending unspents', function() {
-        var myWallet = Wallet.deserialize(JSON.stringify(balanceFixtures))
-        assert.equal(myWallet.getBalance(), 52388527)
-      })
-
-      function fundAddressZero(wallet, amount) {
-        var externalAddress = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs'
-
-        var prevTx = new Transaction()
-        prevTx.addInput(new Transaction(), 0)
-        prevTx.addOutput(externalAddress, amount)
-
-        var tx = new Transaction()
-        tx.addInput(prevTx, 0)
-        tx.addOutput(wallet.addresses[0], amount)
-
-        wallet.processTx([{tx: tx, confirmations: 3}, {tx: prevTx}])
-
-        return tx
+        wallet.processTx(tx, function(err) {
+          if (err) return done(err);
+          done(null, tx)
+        })
       }
     })
 
@@ -278,12 +277,13 @@ describe('Common Blockchain Wallet', function() {
     })
 
     describe('processTx', function() {
-      var prevTx, tx, externalAddress, myWallet, nextAddress, nextChangeAddress
+      var tx, externalAddress, myWallet, nextAddress, nextChangeAddress
 
-      before(function() {
+      before(function(done) {
         externalAddress = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs'
         myWallet = Wallet.deserialize(JSON.stringify(fixtures))
         nextAddress = myWallet.getNextAddress()
+
         nextChangeAddress = myWallet.getNextChangeAddress()
 
         prevTx = new Transaction()
@@ -291,25 +291,19 @@ describe('Common Blockchain Wallet', function() {
         prevTx.addOutput(nextAddress, 200000)
 
         tx = new Transaction()
-        tx.addInput(prevTx, 0)
+        tx.addInput(new Transaction(), 0)
         tx.addOutput(externalAddress, 50000)
         tx.addOutput(nextChangeAddress, 130000)
 
-        myWallet.processTx([{tx: tx, confirmations: 3, timestamp: 1411008787}, {tx: prevTx}])
-      })
+        sandbox.stub(myWallet.api.transactions, 'get').callsArgWith(2, null, [transactionsFixtures.fundedAddressZero])
 
-      it('adds the tx and prevTx to graph', function() {
-        var graph = myWallet.txGraph
-        assert.deepEqual(graph.findNodeById(tx.getId()).tx, tx)
-        assert.deepEqual(graph.findNodeById(prevTx.getId()).tx, prevTx)
-      })
-
-      it('attaches the timestamp, confirmations and calculate fees & values for tx', function() {
-        var metadata = myWallet.txMetadata[tx.getId()]
-        assert.equal(metadata.timestamp, 1411008787)
-        assert.equal(metadata.confirmations, 3)
-        assert.equal(metadata.value, -50000)
-        assert.equal(metadata.fee, 20000)
+        async.series([
+          function(cb) { myWallet.processTx(prevTx, cb)},
+          function(cb) { myWallet.processTx(tx, cb)}
+        ], function(err) {
+          myWallet.api.transactions.get.restore()
+          done(err)
+        })
       })
 
       describe('address derivation', function() {
@@ -330,7 +324,8 @@ describe('Common Blockchain Wallet', function() {
           assert.equal(myWallet.addresses.indexOf(nextAddress), myWallet.addresses.length - 1)
         })
 
-        it('does not add the same address more than once', function() {
+        it('does not add the same address more than once', function(done) {
+          sandbox.stub(myWallet.api.transactions, 'get').callsArgWith(2, null, [transactionsFixtures.fundedAddressZero])
           var nextNextAddress = myWallet.getNextAddress()
 
           var aTx = new Transaction()
@@ -341,46 +336,14 @@ describe('Common Blockchain Wallet', function() {
           bTx.addInput(new Transaction(), 2)
           bTx.addOutput(nextNextAddress, 200000)
 
-          myWallet.processTx([{tx: aTx}, {tx: bTx}])
-
-          assert.equal(myWallet.addresses.indexOf(nextNextAddress), myWallet.addresses.length - 1)
-        })
-
-        it('loops back to check on addresses again if a next address is found used', function() {
-          myWallet = Wallet.deserialize(myWalletSnapshot)
-          var nextNextAddress = 'miDXKzykJqDT5d1NkKB89vSaiSHGWd2iMF'
-          var nextNextNextAddress = 'mrv2ioDxV6GVEs87jPGcaigm9qhbDfetcw'
-
-          var aTx = new Transaction()
-          aTx.addInput(new Transaction(), 1)
-          aTx.addOutput(nextNextAddress, 200000)
-
-          var bTx = new Transaction()
-          bTx.addInput(new Transaction(), 2)
-          bTx.addOutput(nextNextNextAddress, 200000)
-
-          myWallet.processTx([{tx: bTx}, {tx: aTx}])
-
-          assert.equal(myWallet.addresses.indexOf(nextNextAddress), myWallet.addresses.length - 2)
-          assert.equal(myWallet.addresses.indexOf(nextNextNextAddress), myWallet.addresses.length - 1)
-        })
-      })
-
-      describe('when a single tx is passed in', function() {
-        it('works', function() {
-          var outgoingTx = new Transaction()
-          outgoingTx.addInput(tx, 1)
-          outgoingTx.addOutput(externalAddress, 120000)
-
-          myWallet.processTx(outgoingTx)
-
-          var graph = myWallet.txGraph
-          assert.deepEqual(graph.findNodeById(outgoingTx.getId()).tx, outgoingTx)
-          var metadata = myWallet.txMetadata[outgoingTx.getId()]
-          assert.equal(metadata.confirmations, undefined)
-          assert.equal(metadata.timestamp, undefined)
-          assert.equal(metadata.value, -120000)
-          assert.equal(metadata.fee, 10000)
+          async.series([
+            function(cb) { myWallet.processTx(aTx, cb)},
+            function(cb) { myWallet.processTx(bTx, cb)}
+          ], function(err) {
+            if (err) return done(err);
+            assert.equal(myWallet.addresses.indexOf(nextNextAddress), myWallet.addresses.length - 1)
+            done()
+          })
         })
       })
     })
@@ -393,7 +356,7 @@ describe('Common Blockchain Wallet', function() {
 
       it('returns the expected transactions in expected order', function() {
         var txIds = actualHistory.map(function(tx) {
-          return tx.getId()
+          return tx.txId
         })
 
         var expectedIds = history.txs.map(function(tx) {
@@ -404,10 +367,8 @@ describe('Common Blockchain Wallet', function() {
       })
 
       it('returns the transactions with the expected values & fees', function() {
-        var metadata = readOnlyWallet.txMetadata
         var actual = actualHistory.map(function(tx) {
-          var id = tx.getId()
-          return { id: id, fee: metadata[id].fee, value: metadata[id].value }
+          return { id: tx.txId, fee: tx.fees, value: tx.amount }
         })
 
         var expected = history.txs.map(function(tx) {
@@ -534,13 +495,6 @@ describe('Common Blockchain Wallet', function() {
           var pair3 = createTxPair(address2, 520000) // enough for value and fee
           unspentTxs.push(pair3.tx)
 
-          readOnlyWallet.processTx([
-            {tx: pair0.tx, confirmations: 1}, {tx: pair0.prevTx},
-            {tx: pair1.tx, confirmations: 1}, {tx: pair1.prevTx},
-            {tx: pair2.tx, confirmations: 1}, {tx: pair2.prevTx},
-            {tx: pair3.tx, confirmations: 0}, {tx: pair3.prevTx}
-          ])
-
           function createTxPair(address, amount) {
             var prevTx = new Transaction()
             prevTx.addInput(new Transaction(), 0)
@@ -637,15 +591,10 @@ describe('Common Blockchain Wallet', function() {
         })
 
         describe('signing', function(){
-          afterEach(function(){
-            TransactionBuilder.prototype.sign.restore()
-            TransactionBuilder.prototype.build.restore()
-          })
-
           it('signes the inputs with respective keys', function(){
             var fee = 30000
-            sinon.stub(TransactionBuilder.prototype, "sign")
-            sinon.stub(TransactionBuilder.prototype, "build")
+            sandbox.stub(TransactionBuilder.prototype, "sign")
+            sandbox.stub(TransactionBuilder.prototype, "build")
 
             var tx = readOnlyWallet.createTx(to, value, fee)
 
@@ -681,29 +630,7 @@ describe('Common Blockchain Wallet', function() {
 
       before(function(){
         readOnlyWallet = Wallet.deserialize(JSON.stringify(fixtures)) // reset wallet
-
         to = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs'
-        address = readOnlyWallet.addresses[0]
-
-        var pair0 = createTxPair(address, 10000) 
-        var pair1 = createTxPair(address, 50000)
-
-        readOnlyWallet.processTx([
-          {tx: pair0.tx, confirmations: 1}, {tx: pair0.prevTx},
-          {tx: pair1.tx, confirmations: 1}, {tx: pair1.prevTx}
-        ])
-
-        function createTxPair(address, amount) {
-          var prevTx = new Transaction()
-          prevTx.addInput(new Transaction(), 0)
-          prevTx.addOutput(to, amount)
-
-          var tx = new Transaction()
-          tx.addInput(prevTx, 0)
-          tx.addOutput(address, amount)
-
-          return { prevTx: prevTx, tx: tx }
-        }
       })
 
       it('calculates it correctly with single tx input', function() {
@@ -711,7 +638,7 @@ describe('Common Blockchain Wallet', function() {
       })
 
       it('calculates it correctly with multiple tx inputs', function() {
-        assert.deepEqual(readOnlyWallet.estimateFees(to, 50000, [10000, 200000]), [3740, 74800])
+        assert.deepEqual(readOnlyWallet.estimateFees(to, 520000, [10000, 200000]), [3740, 74800])
       })
     })
 
@@ -720,11 +647,11 @@ describe('Common Blockchain Wallet', function() {
       var tx = new Transaction()
 
       beforeEach(function(){
-        sinon.stub(Wallet.prototype, "processTx")
+        sandbox.stub(Wallet.prototype, "processTx").callsArg(1)
       })
 
       it('propagates the transaction through the API', function(done) {
-        sinon.stub(readOnlyWallet.api.transactions, "propagate").callsArg(1)
+        sandbox.stub(readOnlyWallet.api.transactions, 'propagate').callsArg(1)
 
         readOnlyWallet.sendTx(tx, function(err) {
           assert.ifError(err)
@@ -734,7 +661,7 @@ describe('Common Blockchain Wallet', function() {
       })
 
       it('processes the transaction on success', function(done) {
-        sinon.stub(readOnlyWallet.api.transactions, "propagate").callsArg(1)
+        sandbox.stub(readOnlyWallet.api.transactions, 'propagate').callsArg(1)
 
         readOnlyWallet.sendTx(tx, function(err) {
           assert.ifError(err)
@@ -745,17 +672,12 @@ describe('Common Blockchain Wallet', function() {
 
       it('invokes callback with error on error', function(done) {
         var error = new Error('oops')
-        sinon.stub(readOnlyWallet.api.transactions, "propagate").callsArgWith(1, error)
+        sandbox.stub(readOnlyWallet.api.transactions, 'propagate').callsArgWith(1, error)
 
         readOnlyWallet.sendTx(tx, function(err) {
           assert.equal(err, error)
           done()
         })
-      })
-
-      afterEach(function(){
-        readOnlyWallet.api.transactions.propagate.restore()
-        Wallet.prototype.processTx.restore()
       })
     })
   })

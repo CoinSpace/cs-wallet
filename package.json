@@ -7,9 +7,8 @@
     "async": "^0.9.0",
     "big.js": "^3.1.3",
     "bip32-utils": "^0.6.2",
-    "bitcoin-tx-graph": "git://github.com/CoinSpace/bitcoin-tx-graph.git#v4.0.5",
     "bitcoinjs-lib": "^1.5.7",
-    "cs-insight": "git://github.com/CoinSpace/cs-insight.git#v3.1.3",
+    "cs-insight": "git://github.com/CoinSpace/cs-insight.git",
     "envify": "^3.3.1",
     "rewire": "^2.5.1"
   },
