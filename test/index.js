@@ -31,8 +31,13 @@ describe('Common Blockchain Wallet', function() {
   describe('process env', function() {
     it('should setup wrapper api url by process env (bitcoin)', function(done) {
       process.env.API_BTC_URL = 'hello-world'
-      var wallet = new Wallet(externalAccount, internalAccount, 'bitcoin', function() {
-        done()
+      var wallet = new Wallet({
+        externalAccount: externalAccount,
+        internalAccount: internalAccount,
+        networkName: 'bitcoin',
+        done: function() {
+          done()
+        }
       })
       process.env.API_BTC_URL = undefined
       assert.equal(wallet.api.apiURL, 'hello-world')
@@ -40,8 +45,13 @@ describe('Common Blockchain Wallet', function() {
 
     it('should setup wrapper api url by process env (litecoin)', function(done) {
       process.env.API_LTC_URL = 'hello-lite-world'
-      var wallet = new Wallet(externalAccount, internalAccount, 'litecoin', function() {
-        done()
+      var wallet = new Wallet({
+        externalAccount: externalAccount,
+        internalAccount: internalAccount,
+        networkName: 'litecoin',
+        done: function() {
+          done()
+        }
       })
       process.env.API_LTC_URL = undefined
       assert.equal(wallet.api.apiURL, 'hello-lite-world')
@@ -49,8 +59,13 @@ describe('Common Blockchain Wallet', function() {
 
     it('should setup insight API wrapper', function(done) {
       this.timeout(100000)
-      var wallet = new Wallet(externalAccount, internalAccount, 'testnet', function() {
-        done()
+      var wallet = new Wallet({
+        externalAccount: externalAccount,
+        internalAccount: internalAccount,
+        networkName: 'testnet',
+        done: function() {
+          done()
+        }
       })
       assert(wallet.api instanceof require('cs-insight'))
     })
@@ -63,62 +78,36 @@ describe('Common Blockchain Wallet', function() {
     var changeAddresses = ['mk1iSBkdVGkj4rHsgvnNj78sViw8Pq2KBY', 'n4QqWKg6kzgDGtLybDcHCMVPLZuJgT3MZr', 'mk3vi2jCLzzxCUMxvrgL2zumS3CQGedWqN', 'mhoDWJcxYfmKAu57trrhaG9uHWPx5q8W9z', 'mqsxmdRAZ52UUbmrsovDvLuAmFxyXFiaE5', 'mtmw3orgdjNhCJSCCVMLFMf38txz6CzHB9', 'n38DfSrxRr9BoydsXt6NpQDUWAhZCoGWkb', 'muAYGwrAkM4iAAWyGWt9bvat6hGiYAaN1t']
 
     before(function(done) {
-      wallet = new Wallet(externalAccount, internalAccount, 'testnet', done)
+      wallet = new Wallet({
+        externalAccount: externalAccount,
+        internalAccount: internalAccount,
+        networkName: 'testnet',
+        done: done
+      })
     })
 
     describe('constructor', function() {
       it('returns error when externalAccount and internalAccount are missing', function(done) {
-        new Wallet(null, null, 'testnet', function(err) {
-          assert(err)
-          done()
+        new Wallet({
+          networkName: 'testnet',
+          done: function(err) {
+            assert(err)
+            done()
+          }
         })
       })
 
-      it('allows a balance done callback to be specified as the last argument', function(done) {
-        var myWallet = new Wallet(HDNode.fromBase58(externalAccount),
-                   HDNode.fromBase58(internalAccount),
-                   'testnet',
-                   function() {}, // the done callback
-                   function() {}, // the unspents done callback
-                   function(err, balance) { // the balance done callback
-                     assert.ifError(err)
-                     assert(!isNaN(balance))
-                     assert(balance > 0)
-                     assert.equal(balance, parseInt(balance, 10)) // in satoshi
-
-                     assert(Array.isArray(myWallet.addresses))
-                     assert(myWallet.addresses.length > 0)
-                     assert(Array.isArray(myWallet.changeAddresses))
-                     assert(myWallet.changeAddresses.length > 0)
-
-                     done()
-                   })
-      })
-
-      it('allows a unspents done callback to be specified as the second last argument', function(done) {
-        new Wallet(HDNode.fromBase58(externalAccount),
-                   HDNode.fromBase58(internalAccount),
-                   'testnet',
-                   function() {}, // the done callback
-                   function(err, utxos) {
-                     assert.ifError(err)
-                     assert(Array.isArray(utxos))
-                     assert(utxos.length > 0)
-                     assert.equal(utxos[0].value, parseInt(utxos[0].value, 10)) // in satoshi
-                     done()
-                   },
-                   function() {}) // the balance done callback
-      })
-
       it('accepts externalAccount and internalAccount as objects', function() {
-        new Wallet(HDNode.fromBase58(externalAccount),
-                   HDNode.fromBase58(internalAccount),
-                   'testnet',
-                   function(err, w) {
-                     assert.ifError(err)
-                     assert.equal(w.externalAccount.toBase58(), externalAccount)
-                     assert.equal(w.internalAccount.toBase58(), internalAccount)
-                   })
+        new Wallet({
+          externalAccount: HDNode.fromBase58(externalAccount),
+          internalAccount: HDNode.fromBase58(internalAccount),
+          networkName: 'testnet',
+          done: function(err, w) {
+            assert.ifError(err)
+            assert.equal(w.externalAccount.toBase58(), externalAccount)
+            assert.equal(w.internalAccount.toBase58(), internalAccount)
+          }
+        })
       })
 
       describe('wallet properties', function() {
@@ -149,12 +138,17 @@ describe('Common Blockchain Wallet', function() {
         it('api uses a proxy url passed in as an environment variable (blockr)', function(done) {
           var url = 'https://proxy.coin.space/?url='
           process.env.INSIGHT_PROXY_URL = url
-          var wallet = new Wallet(externalAccount, internalAccount, 'testnet', function(err, w) {
-            process.env.INSIGHT_PROXY_URL = undefined
-            assert.ifError(err)
+          var wallet = new Wallet({
+            externalAccount: externalAccount,
+            internalAccount: internalAccount,
+            networkName: 'testnet',
+            done: function(err, w) {
+              process.env.INSIGHT_PROXY_URL = undefined
+              assert.ifError(err)
 
-            assert.equal(wallet.api.getProxyURL(), url)
-            done()
+              assert.equal(wallet.api.getProxyURL(), url)
+              done()
+            }
           })
         })
 
