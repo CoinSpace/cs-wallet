@@ -60,22 +60,30 @@ describe('validator', function(){
     describe('when there is not enough money', function(){
       it('throws an error', function(){
         assert.throws(function() {
-          validate.postCreateTx(1410001, 1410000, 1410000)
+          validate.postCreateTx(1420000, 1410000, 1410000, 2260)
         }, function(e) {
           assert.equal(e.message, "Insufficient funds")
           assert.equal(e.details, null)
-          assert.equal(e.has, 1410000)
-          assert.equal(e.needed, 1410001)
           return true
         })
       })
 
       it('when the total balance including zero conf is enough to meet the amount, it populates the error details field', function(){
         assert.throws(function() {
-          validate.postCreateTx(1410001, 1410000, 1410001)
+          validate.postCreateTx(1410001, 1410000, 1420001, 2260)
         }, function(e) {
           assert.equal(e.message, "Insufficient funds")
           assert.equal(e.details, "Additional funds confirmation pending")
+          return true
+        })
+      })
+
+      it('when value is close to unconfirmed balance, it populates the error details field', function(){
+        assert.throws(function() {
+          validate.postCreateTx(1420000, 1410000, 1420001, 2260)
+        }, function(e) {
+          assert.equal(e.message, "Insufficient funds")
+          assert.equal(e.details, "Attempt to empty wallet")
           return true
         })
       })

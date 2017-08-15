@@ -5,6 +5,7 @@
   "changeAddressIndex": 18,
   "networkName": "testnet",
   "balance": 0,
+  "minConf": 1,
   "unspents": [
     {
       "txId": "98440fe7035aaec39583f68a251602a5623d34f95dbd9f54e7bc8ff29551729f",

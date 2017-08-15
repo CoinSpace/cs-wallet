@@ -6,5 +6,6 @@
   "networkName":"bitcoin",
   "balance": 52388527,
   "unspents": [],
-  "historyTxs": []
+  "historyTxs": [],
+  "minConf": 1
 }
