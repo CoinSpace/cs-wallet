@@ -634,6 +634,26 @@ describe('Common Blockchain Wallet', function() {
       it('calculates it correctly with multiple tx inputs', function() {
         assert.deepEqual(readOnlyWallet.estimateFees(to, 520000, [10000, 200000]), [3740, 74800])
       })
+
+      it('calculates it correctly with utxos passed in', function() {
+        var utxos = [{
+          txId: '98440fe7035aaec39583f68a251602a5623d34f95dbd9f54e7bc8ff29551729f',
+          address: 'mwrRQPbo9Ck2BypSWT74vfG3kEE99Aungq',
+          value: 1520000,
+          vout: 0,
+          confirmations: 3
+        }];
+        assert.deepEqual(readOnlyWallet.estimateFees(to, 520000, [10000, 200000], utxos), [2260, 45200])
+      })
+
+      it('throws error when unspents are invalid', function() {
+        assert.throws(function() {
+          readOnlyWallet.estimateFees(to, 20000, [10000], 300);
+        }, function(e) {
+          assert.equal(e.message, 'Expect utxos to be an array');
+          return true
+        })
+      })
     })
 
     describe('sendTx', function() {
@@ -672,6 +692,73 @@ describe('Common Blockchain Wallet', function() {
           assert.equal(err, error)
           done()
         })
+      })
+    })
+
+    describe('createPrivateKey', function() {
+      it('works', function() {
+        var privateKey = readOnlyWallet.createPrivateKey('5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ')
+        assert(privateKey instanceof bitcoin.ECKey)
+      })
+    })
+
+    describe('createImportTx', function() {
+      var options
+
+      beforeEach(function() {
+        options = {
+          privateKey: readOnlyWallet.internalAccount.derive(0).privKey,
+          unspents: [{
+            txId: 'a3fa16de242caaa97d69f2d285377a04847edbab4eec13e9ff083e14f77b71c8',
+            address: 'mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA',
+            value: 10000,
+            vout: 0,
+            confirmations: 10
+          }],
+          amount: 10000,
+          to: 'n4j3tshEMhXrgzmw8eCTqBujpdGWeVcpCD',
+          fee: 1000
+        }
+      })
+
+      it('works', function() {
+        var tx = readOnlyWallet.createImportTx(options)
+        assert(tx instanceof bitcoin.Transaction)
+      })
+
+      it('errors on amount less than fee', function() {
+        options.fee = 20000
+        assert.throws(function() { readOnlyWallet.createImportTx(options) })
+      })
+
+    })
+
+    describe('getImportTxOptions', function() {
+      it('works', function(done) {
+        var unspents = [{
+          txId: 'a3fa16de242caaa97d69f2d285377a04847edbab4eec13e9ff083e14f77b71c8',
+          address: 'mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA',
+          value: 10000,
+          vout: 0,
+          confirmations: 10
+        },
+        {
+          txId: '7e6be25012e2ee3450b1435d5115d68a9be1cb376e094877df12a1508f003937',
+          address: 'mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA',
+          value: 10000,
+          vout: 0,
+          confirmations: 0
+        }]
+        sandbox.stub(readOnlyWallet.api.addresses, 'unspents').returns(Promise.resolve(unspents))
+
+        var privateKey = readOnlyWallet.internalAccount.derive(0).privKey;
+        readOnlyWallet.getImportTxOptions(privateKey).then(function(options) {
+          assert.equal(options.privateKey, privateKey)
+          assert.equal(options.amount, 10000)
+          assert.equal(options.unspents.length, 1)
+          assert.deepEqual(options.unspents[0], unspents[0])
+          done()
+        }).catch(done)
       })
     })
   })
