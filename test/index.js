@@ -761,5 +761,21 @@ describe('Common Blockchain Wallet', function() {
         }).catch(done)
       })
     })
+
+    describe('exportPrivateKeys', function() {
+      it('works', function() {
+        var csv = readOnlyWallet.exportPrivateKeys();
+        assert.equal(typeof csv, 'string');
+      })
+
+      it('errors on missing unspent address', function() {
+        var myWallet = Wallet.deserialize(JSON.stringify(fixtures))
+        myWallet.unspents.push('missing_address')
+        assert.throws(function() {
+          myWallet.exportPrivateKeys()
+        }, /Unknown address. Make sure the address is from the keychain and has been generated./)
+      })
+    })
+
   })
 })
