@@ -6,9 +6,8 @@ var bitcoin = require('bitcoinjs-lib')
 var Transaction = bitcoin.Transaction
 var TransactionBuilder = bitcoin.TransactionBuilder
 var HDNode = bitcoin.HDNode
-var Address = bitcoin.Address
+var Address = bitcoin.address
 var testnet = bitcoin.networks.testnet
-var bufferutils = bitcoin.bufferutils
 var fixtures = require('./wallet')
 var addressFixtures = require('./addresses')
 var transactionsFixtures = require('./transactions')
@@ -215,8 +214,8 @@ describe('Common Blockchain Wallet', function() {
           sandbox.stub(myWallet.api.transactions, 'get').callsArgWith(2, null, [transactionsFixtures.fundedChangeAddress])
 
           var tx = new Transaction()
-          tx.addInput(fundingTx, 0)
-          tx.addOutput(myWallet.changeAddresses[0], 200000)
+          tx.addInput(fundingTx.getHash(), 0)
+          tx.addOutput(Address.toOutputScript(myWallet.changeAddresses[0], testnet), 200000)
 
           myWallet.processTx(tx, function(err) {
             if (err) return done(err);
@@ -229,8 +228,8 @@ describe('Common Blockchain Wallet', function() {
 
       function fundAddressZero(wallet, done) {
         var tx = new Transaction()
-        tx.addInput(new Transaction(), 0)
-        tx.addOutput(wallet.addresses[0], 200000)
+        tx.addInput((new Transaction()).getHash(), 0)
+        tx.addOutput(Address.toOutputScript(wallet.addresses[0], testnet), 200000)
 
         wallet.processTx(tx, function(err) {
           if (err) return done(err);
@@ -255,11 +254,11 @@ describe('Common Blockchain Wallet', function() {
       it('returns the private key for the given address', function(){
         assert.equal(
           readOnlyWallet.getPrivateKeyForAddress(addresses[1]).toWIF(),
-          readOnlyWallet.externalAccount.derive(1).privKey.toWIF()
+          readOnlyWallet.externalAccount.derive(1).keyPair.toWIF()
         )
         assert.equal(
           readOnlyWallet.getPrivateKeyForAddress(changeAddresses[0]).toWIF(),
-          readOnlyWallet.internalAccount.derive(0).privKey.toWIF()
+          readOnlyWallet.internalAccount.derive(0).keyPair.toWIF()
         )
       })
 
@@ -281,13 +280,13 @@ describe('Common Blockchain Wallet', function() {
         nextChangeAddress = myWallet.getNextChangeAddress()
 
         prevTx = new Transaction()
-        prevTx.addInput(new Transaction(), 0)
-        prevTx.addOutput(nextAddress, 200000)
+        prevTx.addInput((new Transaction()).getHash(), 0)
+        prevTx.addOutput(Address.toOutputScript(nextAddress, testnet), 200000)
 
         tx = new Transaction()
-        tx.addInput(new Transaction(), 0)
-        tx.addOutput(externalAddress, 50000)
-        tx.addOutput(nextChangeAddress, 130000)
+        tx.addInput((new Transaction()).getHash(), 0)
+        tx.addOutput(Address.toOutputScript(externalAddress, testnet), 50000)
+        tx.addOutput(Address.toOutputScript(nextChangeAddress, testnet), 130000)
 
         sandbox.stub(myWallet.api.transactions, 'get').callsArgWith(2, null, [transactionsFixtures.fundedAddressZero])
 
@@ -323,12 +322,12 @@ describe('Common Blockchain Wallet', function() {
           var nextNextAddress = myWallet.getNextAddress()
 
           var aTx = new Transaction()
-          aTx.addInput(new Transaction(), 1)
-          aTx.addOutput(nextNextAddress, 200000)
+          aTx.addInput((new Transaction()).getHash(), 1)
+          aTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(), testnet), 200000)
 
           var bTx = new Transaction()
-          bTx.addInput(new Transaction(), 2)
-          bTx.addOutput(nextNextAddress, 200000)
+          bTx.addInput((new Transaction()).getHash(), 2)
+          bTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(), testnet), 200000)
 
           async.series([
             function(cb) { myWallet.processTx(aTx, cb)},
@@ -446,7 +445,7 @@ describe('Common Blockchain Wallet', function() {
             var tx = readOnlyWallet.createTx(to, value, null, null, utxos)
 
             assert.equal(tx.ins.length, 1)
-            hash = bufferutils.reverse(new Buffer(utxos[2].txId, 'hex'))
+            hash = new Buffer(utxos[2].txId, 'hex').reverse();
             assert.deepEqual(tx.ins[0].hash, hash)
             assert.equal(tx.ins[0].index, 0)
           })
@@ -455,7 +454,7 @@ describe('Common Blockchain Wallet', function() {
             var tx = readOnlyWallet.createTx(to, value, null, 0, utxos)
 
             assert.equal(tx.ins.length, 1)
-            hash = bufferutils.reverse(new Buffer(utxos[3].txId, 'hex'))
+            hash = new Buffer(utxos[3].txId, 'hex').reverse();
             assert.deepEqual(tx.ins[0].hash, hash)
             assert.equal(tx.ins[0].index, 0)
           })
@@ -491,12 +490,12 @@ describe('Common Blockchain Wallet', function() {
 
           function createTxPair(address, amount) {
             var prevTx = new Transaction()
-            prevTx.addInput(new Transaction(), 0)
-            prevTx.addOutput(to, amount)
+            prevTx.addInput((new Transaction()).getHash(), 0)
+            prevTx.addOutput(Address.toOutputScript(to, testnet), amount)
 
             var tx = new Transaction()
-            tx.addInput(prevTx, 0)
-            tx.addOutput(address, amount)
+            tx.addInput(prevTx.getHash(), 0)
+            tx.addOutput(Address.toOutputScript(address, testnet), amount)
 
             return { prevTx: prevTx, tx: tx }
           }
@@ -698,7 +697,7 @@ describe('Common Blockchain Wallet', function() {
     describe('createPrivateKey', function() {
       it('works', function() {
         var privateKey = readOnlyWallet.createPrivateKey('5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ')
-        assert(privateKey instanceof bitcoin.ECKey)
+        assert(privateKey instanceof bitcoin.ECPair)
       })
     })
 
@@ -707,7 +706,7 @@ describe('Common Blockchain Wallet', function() {
 
       beforeEach(function() {
         options = {
-          privateKey: readOnlyWallet.internalAccount.derive(0).privKey,
+          privateKey: readOnlyWallet.internalAccount.derive(0).keyPair,
           unspents: [{
             txId: 'a3fa16de242caaa97d69f2d285377a04847edbab4eec13e9ff083e14f77b71c8',
             address: 'mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA',
@@ -751,7 +750,7 @@ describe('Common Blockchain Wallet', function() {
         }]
         sandbox.stub(readOnlyWallet.api.addresses, 'unspents').returns(Promise.resolve(unspents))
 
-        var privateKey = readOnlyWallet.internalAccount.derive(0).privKey;
+        var privateKey = readOnlyWallet.internalAccount.derive(0).keyPair;
         readOnlyWallet.getImportTxOptions(privateKey).then(function(options) {
           assert.equal(options.privateKey, privateKey)
           assert.equal(options.amount, 10000)
