@@ -696,7 +696,7 @@ describe('Common Blockchain Wallet', function() {
 
     describe('createPrivateKey', function() {
       it('works', function() {
-        var privateKey = readOnlyWallet.createPrivateKey('5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ')
+        var privateKey = readOnlyWallet.createPrivateKey('91tphZbASvHRsscCgB6TZibcSYwVNHzBX6xKvjFSMTNvzizaMyo')
         assert(privateKey instanceof bitcoin.ECPair)
       })
     })
