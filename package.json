@@ -9,7 +9,7 @@
     "bip32-utils": "^0.6.2",
     "bitcoinjs-lib": "git://github.com/CoinSpace/bitcoinjs-lib.git#v3.3.1",
     "cs-insight": "git://github.com/CoinSpace/cs-insight.git#v3.2.5",
-    "lodash.merge": "^4.6.0"
+    "lodash": "^4.17.5"
   },
   "devDependencies": {
     "mocha": "^3.5.3",
