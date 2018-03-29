@@ -1,6 +1,6 @@
 {
   "name": "cs-wallet",
-  "version": "0.13.10",
+  "version": "0.13.11",
   "description": "",
   "main": "index.js",
   "dependencies": {
