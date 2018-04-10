@@ -15,6 +15,8 @@ var balanceFixtures = require('./balance')
 var history = require('./history')
 var rewire = require('rewire')
 var Wallet = require('../')
+var wif = require('wif')
+var BigInteger = require('bigi')
 
 var noop = function() {}
 
@@ -254,11 +256,11 @@ describe('Common Blockchain Wallet', function() {
       it('returns the private key for the given address', function(){
         assert.equal(
           readOnlyWallet.getPrivateKeyForAddress(addresses[1]).toWIF(),
-          readOnlyWallet.externalAccount.derive(1).keyPair.toWIF()
+          wif.encode(testnet.wif, readOnlyWallet.externalAccount.deriveChild(1).privateKey, true)
         )
         assert.equal(
           readOnlyWallet.getPrivateKeyForAddress(changeAddresses[0]).toWIF(),
-          readOnlyWallet.internalAccount.derive(0).keyPair.toWIF()
+          wif.encode(testnet.wif, readOnlyWallet.internalAccount.deriveChild(0).privateKey, true)
         )
       })
 
@@ -705,8 +707,12 @@ describe('Common Blockchain Wallet', function() {
       var options
 
       beforeEach(function() {
+        var node = readOnlyWallet.internalAccount.deriveChild(0);
+        var privateKey = new bitcoin.ECPair(BigInteger.fromBuffer(node.privateKey), null, {
+          network: testnet
+        })
         options = {
-          privateKey: readOnlyWallet.internalAccount.derive(0).keyPair,
+          privateKey: privateKey,
           unspents: [{
             txId: 'a3fa16de242caaa97d69f2d285377a04847edbab4eec13e9ff083e14f77b71c8',
             address: 'mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA',
@@ -750,7 +756,10 @@ describe('Common Blockchain Wallet', function() {
         }]
         sandbox.stub(readOnlyWallet.api.addresses, 'unspents').returns(Promise.resolve(unspents))
 
-        var privateKey = readOnlyWallet.internalAccount.derive(0).keyPair;
+        var node = readOnlyWallet.internalAccount.deriveChild(0);
+        var privateKey = new bitcoin.ECPair(BigInteger.fromBuffer(node.privateKey), null, {
+          network: testnet
+        })
         readOnlyWallet.getImportTxOptions(privateKey).then(function(options) {
           assert.equal(options.privateKey, privateKey)
           assert.equal(options.amount, 10000)
