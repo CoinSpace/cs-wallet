@@ -9,17 +9,19 @@
     "bigi": "^1.4.0",
     "bip32-utils": "git://github.com/CoinSpace/bip32-utils.git#v0.11.3",
     "bitcoinjs-lib": "git://github.com/CoinSpace/bitcoinjs-lib.git#v3.3.1",
-    "cs-insight": "git://github.com/CoinSpace/cs-insight.git#v3.3.0",
     "hdkey": "^0.8.0",
     "lodash": "^4.17.5",
+    "path-to-regexp": "^1.2.1",
     "wif": "^2.0.1"
   },
   "devDependencies": {
     "mocha": "^3.5.3",
     "rewire": "^2.5.2",
-    "sinon": "^3.2.1"
+    "sinon": "^3.2.1",
+    "eslint": "^4.19.1"
   },
   "scripts": {
+    "lint": "eslint lib test",
     "test": "mocha test --reporter spec --timeout 600000"
   },
   "browserify": {
