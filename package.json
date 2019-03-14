@@ -23,7 +23,7 @@
   },
   "scripts": {
     "lint": "eslint lib test",
-    "test": "mocha test --reporter spec --timeout 600000"
+    "test": "COIN_NETWORK=regtest mocha test --reporter spec --timeout 600000"
   },
   "browserify": {
     "transform": [

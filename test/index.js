@@ -1,175 +1,22 @@
 'use strict';
 
 var assert = require('assert');
-var API = require('../lib/api');
 var sinon = require('sinon');
 var async = require('async');
-var bitcoin = require('bitcoinjs-lib');
+var Wallet = require('../');
+var bitcoin = Wallet.bitcoin;
 var Transaction = bitcoin.Transaction;
 var TransactionBuilder = bitcoin.TransactionBuilder;
-var HDNode = bitcoin.HDNode;
 var Address = bitcoin.address;
-var testnet = bitcoin.networks.testnet;
+var network = bitcoin.networks.bitcoin;
 var fixtures = require('./wallet');
 var addressFixtures = require('./addresses');
 var transactionsFixtures = require('./transactions');
 var history = require('./history');
-var Wallet = require('../');
 var wif = require('wif');
 var BigInteger = require('bigi');
 
 describe('Common Blockchain Wallet', function() {
-  var externalAccount;
-  var internalAccount;
-
-  before(function() {
-    // eslint-disable-next-line max-len
-    externalAccount = "tprv8eTJwLvUafTQT1irF54EtaYbzakkbvDaAiP3FfHzpfLiamKqGSJDzG2pQfXQDWVWmmHhM3ERRdeG7V2b7aYNZWKy8UYNQL511sWZuUNNBNR";
-    // eslint-disable-next-line max-len
-    internalAccount = "tprv8eTJwLvUafTQVZgNArJSWQgwu6vtBgEzB9LACG4GPhwofFCSaCMzqj5eYqmZ1qmTJVmsa82EfUqkdpUtMmnKp5RJaUdc1KCjzSUc3nRsoXf";
-  });
-
-  describe('process env', function() {
-    it('should setup wrapper api url by process env (bitcoin)', function(done) {
-      // eslint-disable-next-line no-undef
-      process.env.API_BTC_URL = 'hello-world';
-      var wallet = new Wallet({
-        externalAccount: externalAccount,
-        internalAccount: internalAccount,
-        networkName: 'bitcoin',
-        done: function() {
-          done();
-        }
-      });
-      // eslint-disable-next-line no-undef
-      process.env.API_BTC_URL = undefined;
-      assert.equal(wallet.api.apiURL, 'hello-world');
-    });
-
-    it('should setup wrapper api url by process env (litecoin)', function(done) {
-      // eslint-disable-next-line no-undef
-      process.env.API_LTC_URL = 'hello-lite-world';
-      var wallet = new Wallet({
-        externalAccount: externalAccount,
-        internalAccount: internalAccount,
-        networkName: 'litecoin',
-        done: function() {
-          done();
-        }
-      });
-      // eslint-disable-next-line no-undef
-      process.env.API_LTC_URL = undefined;
-      assert.equal(wallet.api.apiURL, 'hello-lite-world');
-    });
-  });
-
-  describe.skip('network dependent tests', function() {
-    this.timeout(100000);
-    var wallet;
-    var addresses = [
-      'n2DTZtbDbNAX315g3vtUdLKLWeAGtLUKd5',
-      'n3Ry7ra8hFmhPWdFJJNY5YBFNyED8T2F6L',
-      'mjuRrrDwYY4qfK5Cea3PcaqE1Wix7ieBWM'
-    ];
-    var changeAddresses = [
-      'mk1iSBkdVGkj4rHsgvnNj78sViw8Pq2KBY',
-      'n4QqWKg6kzgDGtLybDcHCMVPLZuJgT3MZr',
-      'mk3vi2jCLzzxCUMxvrgL2zumS3CQGedWqN',
-      'mhoDWJcxYfmKAu57trrhaG9uHWPx5q8W9z',
-      'mqsxmdRAZ52UUbmrsovDvLuAmFxyXFiaE5',
-      'mtmw3orgdjNhCJSCCVMLFMf38txz6CzHB9',
-      'n38DfSrxRr9BoydsXt6NpQDUWAhZCoGWkb',
-      'muAYGwrAkM4iAAWyGWt9bvat6hGiYAaN1t'
-    ];
-
-    before(function(done) {
-      wallet = new Wallet({
-        externalAccount: externalAccount,
-        internalAccount: internalAccount,
-        networkName: 'testnet',
-        done: done
-      });
-    });
-
-    describe('constructor', function() {
-      it('returns error when externalAccount and internalAccount are missing', function(done) {
-        new Wallet({
-          networkName: 'testnet',
-          done: function(err) {
-            assert(err);
-            done();
-          }
-        });
-      });
-
-      it('accepts externalAccount and internalAccount as objects', function() {
-        new Wallet({
-          externalAccount: HDNode.fromBase58(externalAccount),
-          internalAccount: HDNode.fromBase58(internalAccount),
-          networkName: 'testnet',
-          done: function(err, w) {
-            assert.ifError(err);
-            assert.equal(w.externalAccount.toBase58(), externalAccount);
-            assert.equal(w.internalAccount.toBase58(), internalAccount);
-          }
-        });
-      });
-
-      describe('wallet properties', function() {
-        it('initializes a txGraph', function() {
-          assert(wallet.txGraph);
-          assert.equal(wallet.txGraph.heads.length, 1);
-        });
-
-        it('assigns externalAccount and internalAccount', function() {
-          assert.equal(wallet.externalAccount.toBase58(), externalAccount);
-          assert.equal(wallet.internalAccount.toBase58(), internalAccount);
-        });
-
-        it('assigns addresses and changeAddresses', function() {
-          assert.deepEqual(wallet.addresses, addresses);
-          assert.deepEqual(wallet.changeAddresses, changeAddresses);
-        });
-
-        it('assigns networkName', function() {
-          assert.equal(wallet.networkName, 'testnet');
-        });
-
-        it('assigns api', function() {
-          assert(wallet.api instanceof API);
-          assert.equal(wallet.api.getProxyURL(), undefined);
-        });
-
-        it('assigns txMetadata', function() {
-          var txIds = wallet.txGraph.getAllNodes().filter(function(n) {
-            return n.tx != null;
-          }).map(function(n) { return n.id; });
-          assert.deepEqual(Object.keys(wallet.txMetadata).sort(), txIds.sort());
-
-          for (var key in wallet.txMetadata) {
-            assert.equal(typeof wallet.txMetadata[key].confirmations, 'number');
-            assert.equal(typeof wallet.txMetadata[key].timestamp, 'number');
-          }
-        });
-      });
-    });
-
-    describe('serialization & deserialization', function() {
-      it('works', function() {
-        var parsed = Wallet.deserialize(wallet.serialize());
-
-        assert.equal(parsed.txGraph.heads.length, wallet.txGraph.heads.length);
-        assert.equal(parsed.txGraph.heads[0].id, wallet.txGraph.heads[0].id);
-        assert.equal(parsed.externalAccount.toBase58(), wallet.externalAccount.toBase58());
-        assert.equal(parsed.internalAccount.toBase58(), wallet.internalAccount.toBase58());
-        assert.equal(parsed.addressIndex, wallet.addressIndex);
-        assert.equal(parsed.changeAddressIndex, wallet.changeAddressIndex);
-        assert.equal(parsed.networkName, wallet.networkName);
-        assert.equal(typeof parsed.api, typeof wallet.api);
-        assert.deepEqual(parsed.txMetadata, wallet.txMetadata);
-      });
-    });
-  });
 
   describe('non-network dependent tests', function() {
     var readOnlyWallet;
@@ -204,7 +51,7 @@ describe('Common Blockchain Wallet', function() {
 
           var tx = new Transaction();
           tx.addInput(fundingTx.getHash(), 0);
-          tx.addOutput(Address.toOutputScript(myWallet.changeAddresses[0], testnet), 200000);
+          tx.addOutput(Address.toOutputScript(myWallet.changeAddresses[0], network), 200000);
 
           myWallet.processTx(tx, function(err) {
             if (err) return done(err);
@@ -218,7 +65,7 @@ describe('Common Blockchain Wallet', function() {
       function fundAddressZero(wallet, done) {
         var tx = new Transaction();
         tx.addInput((new Transaction()).getHash(), 0);
-        tx.addOutput(Address.toOutputScript(wallet.addresses[0], testnet), 200000);
+        tx.addOutput(Address.toOutputScript(wallet.addresses[0], network), 200000);
 
         wallet.processTx(tx, function(err) {
           if (err) return done(err);
@@ -243,11 +90,11 @@ describe('Common Blockchain Wallet', function() {
       it('returns the private key for the given address', function(){
         assert.equal(
           readOnlyWallet.getPrivateKeyForAddress(addresses[1]).toWIF(),
-          wif.encode(testnet.wif, readOnlyWallet.externalAccount.deriveChild(1).privateKey, true)
+          wif.encode(network.wif, readOnlyWallet.externalAccount.deriveChild(1).privateKey, true)
         );
         assert.equal(
           readOnlyWallet.getPrivateKeyForAddress(changeAddresses[0]).toWIF(),
-          wif.encode(testnet.wif, readOnlyWallet.internalAccount.deriveChild(0).privateKey, true)
+          wif.encode(network.wif, readOnlyWallet.internalAccount.deriveChild(0).privateKey, true)
         );
       });
 
@@ -270,12 +117,12 @@ describe('Common Blockchain Wallet', function() {
 
         prevTx = new Transaction();
         prevTx.addInput((new Transaction()).getHash(), 0);
-        prevTx.addOutput(Address.toOutputScript(nextAddress, testnet), 200000);
+        prevTx.addOutput(Address.toOutputScript(nextAddress, network), 200000);
 
         tx = new Transaction();
         tx.addInput((new Transaction()).getHash(), 0);
-        tx.addOutput(Address.toOutputScript(externalAddress, testnet), 50000);
-        tx.addOutput(Address.toOutputScript(nextChangeAddress, testnet), 130000);
+        tx.addOutput(Address.toOutputScript(externalAddress, network), 50000);
+        tx.addOutput(Address.toOutputScript(nextChangeAddress, network), 130000);
 
         sandbox.stub(myWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedAddressZero]);
 
@@ -312,11 +159,11 @@ describe('Common Blockchain Wallet', function() {
 
           var aTx = new Transaction();
           aTx.addInput((new Transaction()).getHash(), 1);
-          aTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(), testnet), 200000);
+          aTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(), network), 200000);
 
           var bTx = new Transaction();
           bTx.addInput((new Transaction()).getHash(), 2);
-          bTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(), testnet), 200000);
+          bTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(), network), 200000);
 
           async.series([
             function(cb) { myWallet.processTx(aTx, cb);},
@@ -402,7 +249,7 @@ describe('Common Blockchain Wallet', function() {
 
             assert.equal(tx.outs.length, 2);
             var out = tx.outs[0];
-            var outAddress = Address.fromOutputScript(out.script, testnet);
+            var outAddress = Address.fromOutputScript(out.script, network);
 
             assert.equal(outAddress.toString(), to);
             assert.equal(out.value, value);
@@ -415,7 +262,7 @@ describe('Common Blockchain Wallet', function() {
 
               assert.equal(tx.outs.length, 2);
               var out = tx.outs[1];
-              var outAddress = Address.fromOutputScript(out.script, testnet);
+              var outAddress = Address.fromOutputScript(out.script, network);
 
               assert.equal(outAddress.toString(), readOnlyWallet.getNextChangeAddress());
               assert.equal(out.value, 10000);
@@ -480,11 +327,11 @@ describe('Common Blockchain Wallet', function() {
           function createTxPair(address, amount) {
             var prevTx = new Transaction();
             prevTx.addInput((new Transaction()).getHash(), 0);
-            prevTx.addOutput(Address.toOutputScript(to, testnet), amount);
+            prevTx.addOutput(Address.toOutputScript(to, network), amount);
 
             var tx = new Transaction();
             tx.addInput(prevTx.getHash(), 0);
-            tx.addOutput(Address.toOutputScript(address, testnet), amount);
+            tx.addOutput(Address.toOutputScript(address, network), amount);
 
             return { prevTx: prevTx, tx: tx };
           }
@@ -496,7 +343,7 @@ describe('Common Blockchain Wallet', function() {
 
             assert.equal(tx.outs.length, 2);
             var out = tx.outs[0];
-            var outAddress = Address.fromOutputScript(out.script, testnet);
+            var outAddress = Address.fromOutputScript(out.script, network);
 
             assert.equal(outAddress.toString(), to);
             assert.equal(out.value, value);
@@ -509,7 +356,7 @@ describe('Common Blockchain Wallet', function() {
 
               assert.equal(tx.outs.length, 2);
               var out = tx.outs[1];
-              var outAddress = Address.fromOutputScript(out.script, testnet);
+              var outAddress = Address.fromOutputScript(out.script, network);
 
               assert.equal(outAddress.toString(), readOnlyWallet.getNextChangeAddress());
               assert.equal(out.value, 10000);
@@ -705,7 +552,7 @@ describe('Common Blockchain Wallet', function() {
       beforeEach(function() {
         var node = readOnlyWallet.internalAccount.deriveChild(0);
         var privateKey = new bitcoin.ECPair(BigInteger.fromBuffer(node.privateKey), null, {
-          network: testnet
+          network: network
         });
         options = {
           privateKey: privateKey,
@@ -754,7 +601,7 @@ describe('Common Blockchain Wallet', function() {
 
         var node = readOnlyWallet.internalAccount.deriveChild(0);
         var privateKey = new bitcoin.ECPair(BigInteger.fromBuffer(node.privateKey), null, {
-          network: testnet
+          network: network
         });
         readOnlyWallet.getImportTxOptions(privateKey).then(function(options) {
           assert.equal(options.privateKey, privateKey);

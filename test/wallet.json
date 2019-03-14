@@ -3,7 +3,7 @@
   "internalAccount": "tprv8f44qFVRyvvEge1Fvm8LZZPEw8L2aykvT7e98SEwqZCBfkeWfRCPENkbvT7wUARC5k1xf6RvpiQ8K9nD2xVvYyktvCnwwQCm25a2kCSsAkF",
   "addressIndex": 5,
   "changeAddressIndex": 18,
-  "networkName": "testnet",
+  "networkName": "bitcoin",
   "balance": 0,
   "minConf": 1,
   "unspents": [

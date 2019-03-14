@@ -2,11 +2,12 @@
 
 var assert = require('assert');
 var validate = require('../lib/validator');
-var networks = require('bitcoinjs-lib').networks;
+var Wallet = require('../');
+var networks = Wallet.bitcoin.networks;
 
 describe('validator', function(){
   describe('preCreateTx', function(){
-    var network = networks.testnet;
+    var network = networks.bitcoin;
 
     describe('destination address validation', function(){
       var value = 1000;
