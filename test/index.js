@@ -53,7 +53,9 @@ describe('Common Blockchain Wallet', function() {
           tx.addInput(fundingTx.getHash(), 0);
           tx.addOutput(Address.toOutputScript(myWallet.changeAddresses[0], network), 200000);
 
-          myWallet.processTx(tx, function(err) {
+          sandbox.stub(myWallet.api.transactions, 'propagate').resolves();
+          myWallet.sendTx(tx, function(err) {
+            myWallet.api.transactions.propagate.restore();
             if (err) return done(err);
 
             assert.equal(myWallet.getBalance(), 200000);
@@ -67,7 +69,9 @@ describe('Common Blockchain Wallet', function() {
         tx.addInput((new Transaction()).getHash(), 0);
         tx.addOutput(Address.toOutputScript(wallet.addresses[0], network), 200000);
 
-        wallet.processTx(tx, function(err) {
+        sandbox.stub(wallet.api.transactions, 'propagate').resolves();
+        wallet.sendTx(tx, function(err) {
+          wallet.api.transactions.propagate.restore();
           if (err) return done(err);
           done(null, tx);
         });
@@ -126,10 +130,12 @@ describe('Common Blockchain Wallet', function() {
 
         sandbox.stub(myWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedAddressZero]);
 
+        sandbox.stub(myWallet.api.transactions, 'propagate').resolves();
         async.series([
-          function(cb) { myWallet.processTx(prevTx, cb);},
-          function(cb) { myWallet.processTx(tx, cb);}
+          function(cb) { myWallet.sendTx(prevTx, cb);},
+          function(cb) { myWallet.sendTx(tx, cb);}
         ], function(err) {
+          myWallet.api.transactions.propagate.restore();
           myWallet.api.transactions.get.restore();
           done(err);
         });
@@ -165,10 +171,12 @@ describe('Common Blockchain Wallet', function() {
           bTx.addInput((new Transaction()).getHash(), 2);
           bTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(), network), 200000);
 
+          sandbox.stub(myWallet.api.transactions, 'propagate').resolves();
           async.series([
-            function(cb) { myWallet.processTx(aTx, cb);},
-            function(cb) { myWallet.processTx(bTx, cb);}
+            function(cb) { myWallet.sendTx(aTx, cb);},
+            function(cb) { myWallet.sendTx(bTx, cb);}
           ], function(err) {
+            myWallet.api.transactions.propagate.restore();
             if (err) return done(err);
             assert.equal(myWallet.addresses.indexOf(nextNextAddress), myWallet.addresses.length - 1);
             done();
@@ -285,21 +293,6 @@ describe('Common Blockchain Wallet', function() {
             assert.deepEqual(tx.ins[0].hash, hash);
             assert.equal(tx.ins[0].index, 0);
           });
-
-          it('respects specified minConf', function(){
-            var tx = readOnlyWallet.createTx(to, value, null, 0, utxos);
-
-            assert.equal(tx.ins.length, 1);
-            var hash = new Buffer(utxos[3].txId, 'hex').reverse();
-            assert.deepEqual(tx.ins[0].hash, hash);
-            assert.equal(tx.ins[0].index, 0);
-          });
-        });
-
-        describe('validations', function(){
-          it('errors on invalid utxos', function(){
-            assert.throws(function() { readOnlyWallet.createTx(to, value, null, null, {}); });
-          });
         });
       });
 
@@ -339,7 +332,7 @@ describe('Common Blockchain Wallet', function() {
 
         describe('transaction outputs', function(){
           it('includes the specified address and amount', function(){
-            var tx = readOnlyWallet.createTx(to, value);
+            var tx = readOnlyWallet.createTx(to, value, 0);
 
             assert.equal(tx.outs.length, 2);
             var out = tx.outs[0];
@@ -372,18 +365,10 @@ describe('Common Blockchain Wallet', function() {
 
         describe('choosing utxo', function(){
           it('takes fees into account', function(){
-            var tx = readOnlyWallet.createTx(to, value);
+            var tx = readOnlyWallet.createTx(to, value, 0);
 
             assert.equal(tx.ins.length, 1);
             assert.deepEqual(tx.ins[0].hash, unspentTxs[2].getHash());
-            assert.equal(tx.ins[0].index, 0);
-          });
-
-          it('respects specified minConf', function(){
-            var tx = readOnlyWallet.createTx(to, value, null, 0);
-
-            assert.equal(tx.ins.length, 1);
-            assert.deepEqual(tx.ins[0].hash, unspentTxs[3].getHash());
             assert.equal(tx.ins[0].index, 0);
           });
         });
@@ -447,7 +432,7 @@ describe('Common Blockchain Wallet', function() {
           });
 
           it('errors on insufficient funds', function(){
-            assert.throws(function() { readOnlyWallet.createTx(to, 1405001); });
+            assert.throws(function() { readOnlyWallet.createTx(to, 1415001, 3740); });
           });
         });
       });
@@ -463,11 +448,11 @@ describe('Common Blockchain Wallet', function() {
       });
 
       it('calculates it correctly with single tx input', function() {
-        assert.deepEqual(readOnlyWallet.estimateFees(to, 20000, [10000]), [2260]);
+        assert.deepEqual(readOnlyWallet.estimateFees(20000), [2260]);
       });
 
       it('calculates it correctly with multiple tx inputs', function() {
-        assert.deepEqual(readOnlyWallet.estimateFees(to, 520000, [10000, 200000]), [3740, 74800]);
+        assert.deepEqual(readOnlyWallet.estimateFees(520000), [3740]);
       });
 
       it('calculates it correctly with utxos passed in', function() {
@@ -478,7 +463,7 @@ describe('Common Blockchain Wallet', function() {
           vout: 0,
           confirmations: 3
         }];
-        assert.deepEqual(readOnlyWallet.estimateFees(to, 520000, [10000, 200000], utxos), [2260, 45200]);
+        assert.deepEqual(readOnlyWallet.estimateFees(520000, utxos), [2260]);
       });
 
       it('throws error when unspents are invalid', function() {
@@ -496,7 +481,7 @@ describe('Common Blockchain Wallet', function() {
       var tx = new Transaction();
 
       beforeEach(function(){
-        sandbox.stub(Wallet.prototype, "processTx").callsArg(1);
+        sandbox.stub(readOnlyWallet.api.transactions, 'get').resolves([]);
       });
 
       it('propagates the transaction through the API', function(done) {
@@ -505,19 +490,6 @@ describe('Common Blockchain Wallet', function() {
           try {
             assert.ifError(err);
             assert(readOnlyWallet.api.transactions.propagate.calledWith(tx.toHex()));
-            done();
-          } catch (err) {
-            done(err);
-          }
-        });
-      });
-
-      it('processes the transaction on success', function(done) {
-        sandbox.stub(readOnlyWallet.api.transactions, 'propagate').resolves();
-        readOnlyWallet.sendTx(tx, function(err) {
-          try {
-            assert.ifError(err);
-            assert(Wallet.prototype.processTx.calledWith(tx));
             done();
           } catch (err) {
             done(err);

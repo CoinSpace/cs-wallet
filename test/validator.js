@@ -81,16 +81,6 @@ describe('validator', function(){
           return true;
         });
       });
-
-      it('when value is close to unconfirmed balance, it populates the error details field', function(){
-        assert.throws(function() {
-          validate.postCreateTx(1420000, 1410000, 1420001, 2260);
-        }, function(e) {
-          assert.equal(e.message, "Insufficient funds");
-          assert.equal(e.details, "Attempt to empty wallet");
-          return true;
-        });
-      });
     });
   });
 
