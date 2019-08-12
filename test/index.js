@@ -80,7 +80,7 @@ describe('Common Blockchain Wallet', function() {
 
     describe('getNextAddress', function() {
       it('works', function() {
-        assert.deepEqual(readOnlyWallet.getNextAddress(), 'mk9p4BPMSTK5C5zZ3Gf6mWZNtBQyC3RC7K');
+        assert.deepEqual(readOnlyWallet.getNextAddress(true), 'mk9p4BPMSTK5C5zZ3Gf6mWZNtBQyC3RC7K');
       });
     });
 
@@ -115,7 +115,7 @@ describe('Common Blockchain Wallet', function() {
       before(function(done) {
         externalAddress = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs';
         myWallet = Wallet.deserialize(JSON.stringify(fixtures));
-        nextAddress = myWallet.getNextAddress();
+        nextAddress = myWallet.getNextAddress(true);
 
         nextChangeAddress = myWallet.getNextChangeAddress();
 
@@ -161,15 +161,15 @@ describe('Common Blockchain Wallet', function() {
 
         it('does not add the same address more than once', function(done) {
           sandbox.stub(myWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedAddressZero]);
-          var nextNextAddress = myWallet.getNextAddress();
+          var nextNextAddress = myWallet.getNextAddress(true);
 
           var aTx = new Transaction();
           aTx.addInput((new Transaction()).getHash(), 1);
-          aTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(), network), 200000);
+          aTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(true), network), 200000);
 
           var bTx = new Transaction();
           bTx.addInput((new Transaction()).getHash(), 2);
-          bTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(), network), 200000);
+          bTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(true), network), 200000);
 
           sandbox.stub(myWallet.api.transactions, 'propagate').resolves();
           async.series([
