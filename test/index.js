@@ -452,7 +452,7 @@ describe('Common Blockchain Wallet', function() {
       });
 
       it('calculates it correctly with multiple tx inputs', function() {
-        assert.deepEqual(readOnlyWallet.estimateFees(520000), [3740]);
+        assert.deepEqual(readOnlyWallet.estimateFees(1020000), [5220]);
       });
 
       it('calculates it correctly with utxos passed in', function() {
