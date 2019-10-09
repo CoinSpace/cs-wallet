@@ -60,10 +60,20 @@ describe('validator', function(){
   });
 
   describe('postCreateTx', function(){
+    describe('when transaction too large', function(){
+      it('throws an error', function() {
+        assert.throws(function() {
+          validate.postCreateTx(1410001, 1400000, 1420000, false, 2260);
+        }, function(e) {
+          assert.equal(e.message, "Transaction too large");
+          return true;
+        });
+      });
+    });
     describe('when there is not enough money', function(){
       it('throws an error', function(){
         assert.throws(function() {
-          validate.postCreateTx(1420000, 1410000, 1410000, 2260);
+          validate.postCreateTx(1420000, 1410000, 1410000, true, 2260);
         }, function(e) {
           assert.equal(e.message, "Insufficient funds");
           assert.equal(e.details, null);
@@ -74,7 +84,7 @@ describe('validator', function(){
       // eslint-disable-next-line max-len
       it('when the total balance including zero conf is enough to meet the amount, it populates the error details field', function() {
         assert.throws(function() {
-          validate.postCreateTx(1410001, 1410000, 1420001, 2260);
+          validate.postCreateTx(1410001, 1410000, 1420001, true, 2260);
         }, function(e) {
           assert.equal(e.message, "Insufficient funds");
           assert.equal(e.details, "Additional funds confirmation pending");
