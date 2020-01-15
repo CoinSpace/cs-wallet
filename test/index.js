@@ -22,7 +22,7 @@ describe('Common Blockchain Wallet', function() {
     var readOnlyWallet;
     var addresses = addressFixtures.addresses;
     var changeAddresses = addressFixtures.changeAddresses;
-    var sandbox = sinon.sandbox.create();
+    var sandbox = sinon.createSandbox();
 
     before(function() {
       // this should be treated as a convenient read-only wallet
@@ -289,7 +289,7 @@ describe('Common Blockchain Wallet', function() {
             var tx = readOnlyWallet.createTx(to, value, null, null, utxos);
 
             assert.equal(tx.ins.length, 1);
-            var hash = new Buffer(utxos[2].txId, 'hex').reverse();
+            var hash = Buffer.from(utxos[2].txId, 'hex').reverse();
             assert.deepEqual(tx.ins[0].hash, hash);
             assert.equal(tx.ins[0].index, 0);
           });

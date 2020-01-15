@@ -17,10 +17,10 @@
     "wif": "^2.0.1"
   },
   "devDependencies": {
-    "mocha": "^3.5.3",
+    "eslint": "^4.19.1",
+    "mocha": "^7.0.0",
     "rewire": "^2.5.2",
-    "sinon": "^3.2.1",
-    "eslint": "^4.19.1"
+    "sinon": "^8.0.4"
   },
   "scripts": {
     "lint": "eslint lib test",
