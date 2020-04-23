@@ -12,7 +12,6 @@ var network = bitcoin.networks.bitcoin;
 var fixtures = require('./wallet');
 var addressFixtures = require('./addresses');
 var transactionsFixtures = require('./transactions');
-var history = require('./history');
 var wif = require('wif');
 var BigInteger = require('bigi');
 
@@ -182,37 +181,6 @@ describe('Common Blockchain Wallet', function() {
             done();
           });
         });
-      });
-    });
-
-    describe('getTransactionHistory', function() {
-      var actualHistory;
-      before(function() {
-        actualHistory = readOnlyWallet.getTransactionHistory();
-      });
-
-      it('returns the expected transactions in expected order', function() {
-        var txIds = actualHistory.map(function(tx) {
-          return tx.txId;
-        });
-
-        var expectedIds = history.txs.map(function(tx) {
-          return tx.id;
-        });
-
-        assert.deepEqual(txIds, expectedIds);
-      });
-
-      it('returns the transactions with the expected values & fees', function() {
-        var actual = actualHistory.map(function(tx) {
-          return { id: tx.txId, fee: tx.fees, value: tx.amount };
-        });
-
-        var expected = history.txs.map(function(tx) {
-          return { id: tx.id, fee: tx.fee, value: tx.value };
-        });
-
-        assert.deepEqual(actual, expected);
       });
     });
 
