@@ -23,17 +23,6 @@ describe('validator', function() {
           validate.preCreateTx('123', value, network);
         }, function(e) {
           assert.equal(e.message, 'Invalid address');
-          assert.equal(e.details, 'Invalid checksum');
-          return true;
-        });
-      });
-
-      it('catches address with the wrong version', function(){
-        assert.throws(function(){
-          validate.preCreateTx('LNjYu1akN22USK3sUrSuJn5WoLMKX5Az9B', value, network);
-        }, function(e) {
-          assert.equal(e.message, 'Invalid address');
-          assert.equal(e.details, 'Invalid address version prefix');
           return true;
         });
       });

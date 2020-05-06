@@ -7,34 +7,39 @@
   "balance": 0,
   "minConf": 1,
   "maxTxInputs": 650,
+  "addressType": "p2pkh",
   "unspents": [
     {
       "txId": "98440fe7035aaec39583f68a251602a5623d34f95dbd9f54e7bc8ff29551729f",
       "address": "mwrRQPbo9Ck2BypSWT74vfG3kEE99Aungq",
       "value": 400000,
       "confirmations": 1,
-      "vout": 0
+      "vout": 0,
+      "type": "p2pkh"
     },
     {
       "txId": "97bad8569bbd71f27b562b49cc65b5fa683e96c7912fac2f9d68e343a59d570e",
       "address": "mwrRQPbo9Ck2BypSWT74vfG3kEE99Aungq",
       "value": 500000,
       "confirmations": 1,
-      "vout": 0
+      "vout": 0,
+      "type": "p2pkh"
     },
     {
       "txId": "7e6be25012e2ee3450b1435d5115d68a9be1cb376e094877df12a1508f003937",
       "address": "mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA",
       "value": 510000,
       "confirmations": 1,
-      "vout": 0
+      "vout": 0,
+      "type": "p2pkh"
     },
     {
       "txId": "a3fa16de242caaa97d69f2d285377a04847edbab4eec13e9ff083e14f77b71c8",
       "address": "mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA",
       "value": 520000,
       "confirmations": 0,
-      "vout": 0
+      "vout": 0,
+      "type": "p2pkh"
     }
   ]
 }
