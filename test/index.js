@@ -425,6 +425,7 @@ describe('Common Blockchain Wallet', function() {
             address: 'mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA',
             value: 10000,
             vout: 0,
+            type: 'p2pkh',
             confirmations: 10
           }],
           amount: 10000,
