@@ -50,7 +50,7 @@ describe('Common Blockchain Wallet', function() {
 
           var tx = new Transaction();
           tx.addInput(fundingTx.getHash(), 0);
-          tx.addOutput(Address.toOutputScript(myWallet.changeAddresses.p2pkh[0], network), 200000);
+          tx.addOutput(Address.toOutputScript(myWallet.accounts.p2pkh.changeAddresses[0], network), 200000);
 
           sandbox.stub(myWallet.api.transactions, 'propagate').resolves();
           myWallet.sendTx(tx, function(err) {
@@ -66,7 +66,7 @@ describe('Common Blockchain Wallet', function() {
       function fundAddressZero(wallet, done) {
         var tx = new Transaction();
         tx.addInput((new Transaction()).getHash(), 0);
-        tx.addOutput(Address.toOutputScript(wallet.addresses.p2pkh[0], network), 200000);
+        tx.addOutput(Address.toOutputScript(wallet.accounts.p2pkh.addresses[0], network), 200000);
 
         sandbox.stub(wallet.api.transactions, 'propagate').resolves();
         wallet.sendTx(tx, function(err) {
@@ -79,13 +79,13 @@ describe('Common Blockchain Wallet', function() {
 
     describe('getNextAddress', function() {
       it('works', function() {
-        assert.deepEqual(readOnlyWallet.getNextAddress(true), 'mk9p4BPMSTK5C5zZ3Gf6mWZNtBQyC3RC7K');
+        assert.deepEqual(readOnlyWallet.getNextAddress(true), 'mr7dXSfei5TQPmkJhA6cLmrwnhihaqbCUy');
       });
     });
 
     describe('getNextChangeAddress', function() {
       it('works', function() {
-        assert.deepEqual(readOnlyWallet.getNextChangeAddress(), 'mrsMaRK7PNQt1i9sv11Dx8ZCE6aZxDKCyi');
+        assert.deepEqual(readOnlyWallet.getNextChangeAddress(), 'mm1Y2FNfKCvvP6e67wyyxBoQkkwWXyJmDB');
       });
     });
 
@@ -93,11 +93,11 @@ describe('Common Blockchain Wallet', function() {
       it('returns the private key for the given address', function(){
         assert.equal(
           readOnlyWallet.getPrivateKeyForAddress(addresses[1]).toWIF(),
-          wif.encode(network.wif, readOnlyWallet.externalAccount.deriveChild(1).privateKey, true)
+          wif.encode(network.wif, readOnlyWallet.accounts.p2pkh.external.deriveChild(1).privateKey, true)
         );
         assert.equal(
           readOnlyWallet.getPrivateKeyForAddress(changeAddresses[0]).toWIF(),
-          wif.encode(network.wif, readOnlyWallet.internalAccount.deriveChild(0).privateKey, true)
+          wif.encode(network.wif, readOnlyWallet.accounts.p2pkh.internal.deriveChild(0).privateKey, true)
         );
       });
 
@@ -151,13 +151,13 @@ describe('Common Blockchain Wallet', function() {
         });
 
         it('adds the next change address to changeAddresses if the it is used to receive funds', function() {
-          var expected = myWallet.changeAddresses.p2pkh.length - 1;
-          assert.equal(myWallet.changeAddresses.p2pkh.indexOf(nextChangeAddress), expected);
+          var expected = myWallet.accounts.p2pkh.changeAddresses.length - 1;
+          assert.equal(myWallet.accounts.p2pkh.changeAddresses.indexOf(nextChangeAddress), expected);
         });
 
         it('adds the next address to addresses if the it is used to receive funds', function() {
-          var expected = myWallet.addresses.p2pkh.length - 1;
-          assert.equal(myWallet.addresses.p2pkh.indexOf(nextAddress), expected);
+          var expected = myWallet.accounts.p2pkh.addresses.length - 1;
+          assert.equal(myWallet.accounts.p2pkh.addresses.indexOf(nextAddress), expected);
         });
 
         it('does not add the same address more than once', function(done) {
@@ -179,7 +179,8 @@ describe('Common Blockchain Wallet', function() {
           ], function(err) {
             myWallet.api.transactions.propagate.restore();
             if (err) return done(err);
-            assert.equal(myWallet.addresses.p2pkh.indexOf(nextNextAddress), myWallet.addresses.p2pkh.length - 1);
+            var addresses = myWallet.accounts.p2pkh.addresses;
+            assert.equal(addresses.indexOf(nextNextAddress), addresses.length - 1);
             done();
           });
         });
@@ -195,8 +196,8 @@ describe('Common Blockchain Wallet', function() {
 
         unspentTxs = [];
 
-        address1 = readOnlyWallet.addresses.p2pkh[0];
-        address2 = readOnlyWallet.changeAddresses.p2pkh[0];
+        address1 = readOnlyWallet.accounts.p2pkh.addresses[0];
+        address2 = readOnlyWallet.accounts.p2pkh.changeAddresses[0];
 
         var pair0 = createTxPair(address1, 400000); // not enough for value
         unspentTxs.push(pair0.tx);
@@ -350,7 +351,7 @@ describe('Common Blockchain Wallet', function() {
       it('calculates it correctly with utxos passed in', function() {
         var utxos = [{
           txId: '98440fe7035aaec39583f68a251602a5623d34f95dbd9f54e7bc8ff29551729f',
-          address: 'mwrRQPbo9Ck2BypSWT74vfG3kEE99Aungq',
+          address: 'n2rvmEac7zD1iknp7nkFfmqXM1pbbAoctw',
           value: 1520000,
           vout: 0,
           confirmations: 3
@@ -414,7 +415,7 @@ describe('Common Blockchain Wallet', function() {
       var options;
 
       beforeEach(function() {
-        var node = readOnlyWallet.internalAccount.deriveChild(0);
+        var node = readOnlyWallet.accounts.p2pkh.internal.deriveChild(0);
         var privateKey = new bitcoin.ECPair(BigInteger.fromBuffer(node.privateKey), null, {
           network: network
         });
@@ -422,14 +423,14 @@ describe('Common Blockchain Wallet', function() {
           privateKey: privateKey,
           unspents: [{
             txId: 'a3fa16de242caaa97d69f2d285377a04847edbab4eec13e9ff083e14f77b71c8',
-            address: 'mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA',
+            address: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
             value: 10000,
             vout: 0,
             type: 'p2pkh',
             confirmations: 10
           }],
           amount: 10000,
-          to: 'n4j3tshEMhXrgzmw8eCTqBujpdGWeVcpCD',
+          to: 'mo7f7vngyFkPeYsYqnubdeTJfMSxSZVSnL',
           fee: 1000
         };
       });
@@ -450,21 +451,21 @@ describe('Common Blockchain Wallet', function() {
       it('works', function(done) {
         var unspents = [{
           txId: 'a3fa16de242caaa97d69f2d285377a04847edbab4eec13e9ff083e14f77b71c8',
-          address: 'mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA',
+          address: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
           value: 10000,
           vout: 0,
           confirmations: 10
         },
         {
           txId: '7e6be25012e2ee3450b1435d5115d68a9be1cb376e094877df12a1508f003937',
-          address: 'mkGgTrTSX5szqJf2xMUY6ab7LE5wVJvNYA',
+          address: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
           value: 10000,
           vout: 0,
           confirmations: 0
         }];
         sandbox.stub(readOnlyWallet.api.addresses, 'unspents').returns(Promise.resolve(unspents));
 
-        var node = readOnlyWallet.internalAccount.deriveChild(0);
+        var node = readOnlyWallet.accounts.p2pkh.internal.deriveChild(0);
         var privateKey = new bitcoin.ECPair(BigInteger.fromBuffer(node.privateKey), null, {
           network: network
         });

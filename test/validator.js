@@ -29,7 +29,7 @@ describe('validator', function() {
 
       it('allows valid pubKeyHash address', function(){
         assert.doesNotThrow(function() {
-          validate.preCreateTx('mmGUSgaP7E8ig34MG2w1HzVjgwbqJoRQQu', value, network);
+          validate.preCreateTx('myYBF2Yo1LUthn3eDopEWA4a6sj4UmsWzf', value, network);
         });
       });
 
@@ -43,7 +43,7 @@ describe('validator', function() {
     describe('when value is below dust threshold', function(){
       it('throws an error', function(){
         assert.throws(function() {
-          validate.preCreateTx('mmGUSgaP7E8ig34MG2w1HzVjgwbqJoRQQu', 546, network);
+          validate.preCreateTx('myYBF2Yo1LUthn3eDopEWA4a6sj4UmsWzf', 546, network);
         }, function(e) {
           assert.equal(e.message, "Invalid value");
           assert.equal(e.details, "Not above dust threshold");
