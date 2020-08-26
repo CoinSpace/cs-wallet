@@ -12,7 +12,7 @@
     "bigi": "^1.4.0",
     "bip32-utils": "git://github.com/CoinSpace/bip32-utils.git#v0.11.4",
     "bitcoinjs-lib": "git://github.com/CoinSpace/bitcoinjs-lib.git#v3.3.1",
-    "hdkey": "^0.8.0",
+    "hdkey": "^2.0.1",
     "lodash": "^4.17.5",
     "path-to-regexp": "^1.2.1",
     "wif": "^2.0.1"
