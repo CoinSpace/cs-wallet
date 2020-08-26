@@ -332,7 +332,7 @@ describe('wallet', function() {
 
     describe('transaction outputs', function(){
       it('includes the specified address and amount', function(){
-        var tx = readOnlyWallet.createTx(to, value, 0);
+        var tx = readOnlyWallet.createTx(to, value, 0).sign();
 
         assert.equal(tx.outs.length, 2);
         var out = tx.outs[0];
@@ -345,7 +345,7 @@ describe('wallet', function() {
       describe('change', function(){
         it('uses the next change address', function(){
           var fee = 0;
-          var tx = readOnlyWallet.createTx(to, value, fee);
+          var tx = readOnlyWallet.createTx(to, value, fee).sign();
 
           assert.equal(tx.outs.length, 2);
           var out = tx.outs[1];
@@ -357,7 +357,7 @@ describe('wallet', function() {
 
         it('skips change if it is not above dust threshold', function(){
           var fee = 9454;
-          var tx = readOnlyWallet.createTx(to, value, fee);
+          var tx = readOnlyWallet.createTx(to, value, fee).sign();
           assert.equal(tx.outs.length, 1);
         });
       });
@@ -365,7 +365,7 @@ describe('wallet', function() {
 
     describe('choosing utxo', function(){
       it('takes fees into account', function(){
-        var tx = readOnlyWallet.createTx(to, value, 0);
+        var tx = readOnlyWallet.createTx(to, value, 0).sign();
 
         assert.equal(tx.ins.length, 1);
         assert.deepEqual(tx.ins[0].hash, unspentTxs[2].getHash());
@@ -376,7 +376,7 @@ describe('wallet', function() {
     describe('transaction fee', function(){
       it('allows fee to be specified', function(){
         var fee = 30000;
-        var tx = readOnlyWallet.createTx(to, value, fee);
+        var tx = readOnlyWallet.createTx(to, value, fee).sign();
 
         assert.equal(getFee(tx), fee);
       });
@@ -384,7 +384,7 @@ describe('wallet', function() {
       it('allows fee to be set to zero', function(){
         value = 510000;
         var fee = 0;
-        var tx = readOnlyWallet.createTx(to, value, fee);
+        var tx = readOnlyWallet.createTx(to, value, fee).sign();
 
         assert.equal(getFee(tx), fee);
       });
@@ -410,7 +410,7 @@ describe('wallet', function() {
         sandbox.stub(TransactionBuilder.prototype, "sign");
         sandbox.stub(TransactionBuilder.prototype, "build");
 
-        readOnlyWallet.createTx(to, value, fee);
+        readOnlyWallet.createTx(to, value, fee).sign();
 
         assert(TransactionBuilder.prototype.sign.calledWith(0, readOnlyWallet.getPrivateKeyForAddress(address2)));
         assert(TransactionBuilder.prototype.sign.calledWith(1, readOnlyWallet.getPrivateKeyForAddress(address1)));
@@ -542,7 +542,7 @@ describe('wallet', function() {
     });
 
     it('works', function() {
-      var tx = readOnlyWallet.createImportTx(options);
+      var tx = readOnlyWallet.createImportTx(options).sign();
       assert(tx instanceof bitcoin.Transaction);
     });
 
