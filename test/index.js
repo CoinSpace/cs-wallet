@@ -16,6 +16,8 @@ var wif = require('wif');
 var BigInteger = require('bigi');
 // eslint-disable-next-line max-len
 var RANDOM_SEED = '2b48a48a752f6c49772bf97205660411cd2163fe6ce2de19537e9c94d3648c85c0d7f405660c20253115aaf1799b1c41cdd62b4cfbb6845bc9475495fc64b874';
+// eslint-disable-next-line max-len
+var RANDOM_SEED_PUB_KEY = 'tpubD8X9JnC6UVearYMvty3RNHgeboMFEnRusUoD5uHixU3RosJxwHg4jZGpwSnhB9mfjaFbzpyJMzpGPaxM146RWMEVRtjVVMQvv2JqPgJbKLh';
 
 describe('wallet', function() {
   var readOnlyWallet;
@@ -79,52 +81,46 @@ describe('wallet', function() {
 
   describe('unlock', function() {
     it('works', function() {
-      var accounts = readOnlyWallet.accounts;
       var publicKey = {
-        p2pkh: accounts.p2pkh.base.publicExtendedKey,
+        p2pkh: RANDOM_SEED_PUB_KEY,
       };
       var wallet = new Wallet({
         networkName: 'bitcoin',
         publicKey: JSON.stringify(publicKey)
       });
       assert.equal(wallet.isLocked, true);
-      var privateExtendedKeys = {
-        p2pkh: accounts.p2pkh.base.privateExtendedKey,
-      };
-      wallet.unlock(JSON.stringify(privateExtendedKeys));
+      wallet.unlock(RANDOM_SEED);
       Object.keys(wallet.accounts).forEach(function(key) {
         var account = wallet.accounts[key];
-        assert.equal(account.base.privateExtendedKey, accounts.p2pkh.base.privateExtendedKey);
-        assert.equal(account.external.privateExtendedKey, accounts.p2pkh.external.privateExtendedKey);
-        assert.equal(account.internal.privateExtendedKey, accounts.p2pkh.internal.privateExtendedKey);
+        assert.ok(account.base.privateExtendedKey);
+        assert.ok(account.external.privateExtendedKey);
+        assert.ok(account.internal.privateExtendedKey);
       });
       assert.equal(wallet.isLocked, false);
     });
   });
 
-  describe('dumpKeys', function() {
+  describe('publicKey', function() {
     it('works', function() {
       var wallet = new Wallet({
         networkName: 'bitcoin',
         seed: RANDOM_SEED
       });
-      var keys = wallet.dumpKeys();
-      assert.ok(keys);
-      assert.ok(keys.private);
-      assert.ok(keys.public);
+      var publicKey = wallet.publicKey();
+      assert.ok(publicKey);
     });
 
-    it('dumped keys are valid', function() {
+    it('key is valid', function() {
       var wallet = new Wallet({
         networkName: 'bitcoin',
         seed: RANDOM_SEED
       });
-      var keys = wallet.dumpKeys();
+      var publicKey = wallet.publicKey();
       var secondWalet = new Wallet({
         networkName: 'bitcoin',
-        publicKey: keys.public
+        publicKey: publicKey
       });
-      secondWalet.unlock(keys.private);
+      secondWalet.unlock(RANDOM_SEED);
       Object.keys(wallet.accounts).forEach(function(key) {
         var account = wallet.accounts[key];
         var secondAccount = secondWalet.accounts[key];
