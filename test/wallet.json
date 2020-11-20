@@ -6,6 +6,7 @@
   "balance": 0,
   "minConf": 1,
   "maxTxInputs": 650,
+  "replaceByFeeFactor": 1.5,
   "addressType": "p2pkh",
   "unspents": [
     {

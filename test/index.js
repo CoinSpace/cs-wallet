@@ -476,7 +476,7 @@ describe('wallet', function() {
     var tx = new Transaction();
 
     beforeEach(function(){
-      sandbox.stub(readOnlyWallet.api.transactions, 'get').resolves([]);
+      sandbox.stub(readOnlyWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedChangeAddress]);
     });
 
     it('propagates the transaction through the API', function(done) {
@@ -578,6 +578,58 @@ describe('wallet', function() {
         assert.deepEqual(options.unspents[0], unspents[0]);
         done();
       }).catch(done);
+    });
+  });
+
+  describe('createReplacement', function() {
+    it('works', function() {
+      var historyTx = {
+        amount: -10000000,
+        confirmations: 0,
+        csFee: 0,
+        fee: 2486,
+        feePerByte: 11,
+        id: '48cf58d84fcd0b94a1cf3766d1c2ec32a7789ce238c2083d990cbb797a07f451',
+        ins: [{
+          addr: 'n2rvmEac7zD1iknp7nkFfmqXM1pbbAoctw',
+          address: 'n2rvmEac7zD1iknp7nkFfmqXM1pbbAoctw',
+          amount: 100000000,
+          txid: 'cb2f3955cb97941f27485c3d7ecac0932cbe3ad9ce83444a2791e950f8e9762b',
+          type: 'p2pkh',
+          vout: 0,
+        }],
+        isIncoming: false,
+        isRBF: true,
+        minerFee: 2486,
+        outs: [
+          {
+            address: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN',
+            amount: 10000000,
+            vout: 0,
+            type: 'p2sh',
+            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN'
+          },
+          {
+            address: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
+            amount: 89997514,
+            vout: 1,
+            type: 'p2pkh',
+            addr: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D'
+          }
+        ],
+        size: 226,
+        timestamp: 1605799684000
+      };
+      var replacement = readOnlyWallet.createReplacement(historyTx).sign();
+      assert.equal(replacement.ins.length, 1);
+      assert.equal(replacement.outs.length, 2);
+      assert.deepEqual(replacement.replaceByFeeTx, historyTx);
+
+      assert.equal(replacement.outs[0].value, historyTx.outs[0].amount);
+      assert.equal(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
+
+      var replacementFee = historyTx.ins[0].amount - (replacement.outs[0].value + replacement.outs[1].value);
+      assert.equal(replacementFee, (historyTx.fee * readOnlyWallet.replaceByFeeFactor));
     });
   });
 
