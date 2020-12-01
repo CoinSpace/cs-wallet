@@ -25,7 +25,7 @@ describe('wallet', function() {
   var changeAddresses = addressFixtures.changeAddresses;
   var sandbox = sinon.createSandbox();
 
-  before(function() {
+  beforeEach(function() {
     // this should be treated as a convenient read-only wallet
     readOnlyWallet = Wallet.deserialize(JSON.stringify(fixtures));
   });
@@ -582,7 +582,29 @@ describe('wallet', function() {
   });
 
   describe('createReplacement', function() {
-    it('works', function() {
+
+    function getReplacementFeePerByte(historyTx, replacement) {
+      var utxos = historyTx.ins.map(function(input) {
+        return {
+          txId: input.txid,
+          type: input.type,
+          address: input.addr,
+          vout: input.vout,
+          value: input.amount,
+        };
+      }).concat(readOnlyWallet.getUnspentsForTx({gap: 1}));
+      var incoming = replacement.ins.reduce(function(a, x) {
+        return a + utxos.find(function(utxo) {
+          return utxo.txId === Buffer.from(x.hash, 'hex').reverse().toString('hex') && x.index === utxo.vout;
+        }).value;
+      }, 0);
+      var outgoing = replacement.outs.reduce(function (a, x) { return a + x.value; }, 0);
+      var fee = incoming - outgoing;
+      var size = replacement.ins.length * 148 + replacement.outs.length * 34 + 10;
+      return Math.ceil(fee / size);
+    }
+
+    it('works (change address exist)', function() {
       var historyTx = {
         amount: -10000000,
         confirmations: 0,
@@ -628,8 +650,193 @@ describe('wallet', function() {
       assert.equal(replacement.outs[0].value, historyTx.outs[0].amount);
       assert.equal(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
 
-      var replacementFee = historyTx.ins[0].amount - (replacement.outs[0].value + replacement.outs[1].value);
-      assert.equal(replacementFee, (historyTx.fee * readOnlyWallet.replaceByFeeFactor));
+      var replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
+      assert.equal(replacementFeePerByte, Math.ceil(historyTx.feePerByte * readOnlyWallet.replaceByFeeFactor));
+    });
+
+    it('works (change address exist: persistence)', function() {
+      var historyTx = {
+        amount: -99995731,
+        confirmations: 0,
+        csFee: 0,
+        fee: 2486,
+        feePerByte: 11,
+        id: '48cf58d84fcd0b94a1cf3766d1c2ec32a7789ce238c2083d990cbb797a07f451',
+        ins: [{
+          addr: 'n2rvmEac7zD1iknp7nkFfmqXM1pbbAoctw',
+          address: 'n2rvmEac7zD1iknp7nkFfmqXM1pbbAoctw',
+          amount: 100000000,
+          txid: 'cb2f3955cb97941f27485c3d7ecac0932cbe3ad9ce83444a2791e950f8e9762b',
+          type: 'p2pkh',
+          vout: 0,
+        }],
+        isIncoming: false,
+        isRBF: true,
+        minerFee: 2486,
+        outs: [
+          {
+            address: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN',
+            amount: 99995731,
+            vout: 0,
+            type: 'p2sh',
+            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN'
+          },
+          {
+            address: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
+            amount: 1783,
+            vout: 1,
+            type: 'p2pkh',
+            addr: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D'
+          }
+        ],
+        size: 226,
+        timestamp: 1605799684000
+      };
+      var replacement = readOnlyWallet.createReplacement(historyTx).sign();
+
+      assert.equal(replacement.ins.length, 2);
+      assert.equal(replacement.outs.length, 2);
+      assert.deepEqual(replacement.replaceByFeeTx, historyTx);
+
+      assert.equal(replacement.outs[0].value, historyTx.outs[0].amount);
+      assert.equal(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
+
+      var replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
+      assert.equal(replacementFeePerByte, Math.ceil(historyTx.feePerByte * readOnlyWallet.replaceByFeeFactor));
+    });
+
+    it('works (change address exist: insufficient funds)', function() {
+      var historyTx = {
+        amount: -99935631,
+        confirmations: 0,
+        csFee: 0,
+        fee: 2486,
+        feePerByte: 11,
+        id: '48cf58d84fcd0b94a1cf3766d1c2ec32a7789ce238c2083d990cbb797a07f451',
+        ins: [{
+          addr: 'n2rvmEac7zD1iknp7nkFfmqXM1pbbAoctw',
+          address: 'n2rvmEac7zD1iknp7nkFfmqXM1pbbAoctw',
+          amount: 100000000,
+          txid: 'cb2f3955cb97941f27485c3d7ecac0932cbe3ad9ce83444a2791e950f8e9762b',
+          type: 'p2pkh',
+          vout: 0,
+        }],
+        isIncoming: false,
+        isRBF: true,
+        minerFee: 2486,
+        outs: [
+          {
+            address: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN',
+            amount: 99935631,
+            vout: 0,
+            type: 'p2sh',
+            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN'
+          },
+          {
+            address: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
+            amount: 61883,
+            vout: 1,
+            type: 'p2pkh',
+            addr: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D'
+          }
+        ],
+        size: 226,
+        timestamp: 1605799684000
+      };
+      readOnlyWallet.replaceByFeeFactor = 200;
+      assert.throws(function() {
+        readOnlyWallet.createReplacement(historyTx).sign();
+      }, /Insufficient funds/);
+    });
+
+    it('works (no change address)', function() {
+      var historyTx = {
+        amount: -99667200,
+        confirmations: 0,
+        csFee: 0,
+        fee: 332800,
+        feePerByte: 1734,
+        id: '48cf58d84fcd0b94a1cf3766d1c2ec32a7789ce238c2083d990cbb797a07f451',
+        ins: [{
+          addr: 'n2rvmEac7zD1iknp7nkFfmqXM1pbbAoctw',
+          address: 'n2rvmEac7zD1iknp7nkFfmqXM1pbbAoctw',
+          amount: 100000000,
+          txid: 'cb2f3955cb97941f27485c3d7ecac0932cbe3ad9ce83444a2791e950f8e9762b',
+          type: 'p2pkh',
+          vout: 0,
+        }],
+        isIncoming: false,
+        isRBF: true,
+        minerFee: 332800,
+        outs: [
+          {
+            address: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN',
+            amount: 99667200,
+            vout: 0,
+            type: 'p2sh',
+            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN'
+          },
+        ],
+        size: 192,
+        timestamp: 1605799684000
+      };
+
+      var replacement = readOnlyWallet.createReplacement(historyTx).sign();
+
+      assert.equal(replacement.ins.length, 4);
+      assert.equal(replacement.outs.length, 1);
+      assert.deepEqual(replacement.replaceByFeeTx, historyTx);
+
+      assert.equal(replacement.outs[0].value, historyTx.outs[0].amount);
+      assert.equal(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
+
+      var replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
+      assert.equal(replacementFeePerByte, 2741);
+    });
+
+    it('works (no change address: need to add)', function() {
+      var historyTx = {
+        amount: -9999000,
+        confirmations: 0,
+        csFee: 0,
+        fee: 10000,
+        feePerByte: 53,
+        id: '48cf58d84fcd0b94a1cf3766d1c2ec32a7789ce238c2083d990cbb797a07f451',
+        ins: [{
+          addr: 'n2rvmEac7zD1iknp7nkFfmqXM1pbbAoctw',
+          address: 'n2rvmEac7zD1iknp7nkFfmqXM1pbbAoctw',
+          amount: 100000000,
+          txid: 'cb2f3955cb97941f27485c3d7ecac0932cbe3ad9ce83444a2791e950f8e9762b',
+          type: 'p2pkh',
+          vout: 0,
+        }],
+        isIncoming: false,
+        isRBF: true,
+        minerFee: 10000,
+        outs: [
+          {
+            address: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN',
+            amount: 99990000,
+            vout: 0,
+            type: 'p2sh',
+            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN'
+          },
+        ],
+        size: 192,
+        timestamp: 1605799684000
+      };
+
+      var replacement = readOnlyWallet.createReplacement(historyTx).sign();
+
+      assert.equal(replacement.ins.length, 2);
+      assert.equal(replacement.outs.length, 2);
+      assert.deepEqual(replacement.replaceByFeeTx, historyTx);
+
+      assert.equal(replacement.outs[0].value, historyTx.outs[0].amount);
+      assert.equal(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
+
+      var replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
+      assert.equal(replacementFeePerByte, Math.ceil(historyTx.feePerByte * readOnlyWallet.replaceByFeeFactor));
     });
   });
 
