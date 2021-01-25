@@ -19,7 +19,8 @@
     "wif": "^2.0.1"
   },
   "devDependencies": {
-    "eslint": "^6.8.0",
+    "@coinspace/eslint-config": "^1.0.1",
+    "eslint": "^7.18.0",
     "mocha": "^7.0.0",
     "rewire": "^2.5.2",
     "sinon": "^8.0.4"
@@ -28,9 +29,15 @@
     "lint": "eslint lib test",
     "test": "COIN_NETWORK=regtest mocha test --reporter spec --timeout 600000"
   },
-  "browserify": {
-    "transform": [
-      "envify"
-    ]
+  "eslintConfig": {
+    "extends": [
+      "@coinspace"
+    ],
+    "env": {
+      "mocha": true,
+      "node": true,
+      "browser": true,
+      "commonjs": true
+    }
   }
 }

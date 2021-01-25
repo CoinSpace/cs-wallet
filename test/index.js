@@ -1,57 +1,57 @@
 'use strict';
 
-var assert = require('assert');
-var sinon = require('sinon');
-var async = require('async');
-var Wallet = require('../');
-var bitcoin = Wallet.bitcoin;
-var Transaction = bitcoin.Transaction;
-var TransactionBuilder = bitcoin.TransactionBuilder;
-var Address = bitcoin.address;
-var network = bitcoin.networks.bitcoin;
-var fixtures = require('./wallet');
-var addressFixtures = require('./addresses');
-var transactionsFixtures = require('./transactions');
-var wif = require('wif');
-var BigInteger = require('bigi');
+const assert = require('assert');
+const sinon = require('sinon');
+const async = require('async');
+const Wallet = require('../');
+const { bitcoin } = Wallet;
+const { Transaction } = bitcoin;
+const { TransactionBuilder } = bitcoin;
+const Address = bitcoin.address;
+const network = bitcoin.networks.bitcoin;
+const fixtures = require('./wallet');
+const addressFixtures = require('./addresses');
+const transactionsFixtures = require('./transactions');
+const wif = require('wif');
+const BigInteger = require('bigi');
 // eslint-disable-next-line max-len
-var RANDOM_SEED = '2b48a48a752f6c49772bf97205660411cd2163fe6ce2de19537e9c94d3648c85c0d7f405660c20253115aaf1799b1c41cdd62b4cfbb6845bc9475495fc64b874';
+const RANDOM_SEED = '2b48a48a752f6c49772bf97205660411cd2163fe6ce2de19537e9c94d3648c85c0d7f405660c20253115aaf1799b1c41cdd62b4cfbb6845bc9475495fc64b874';
 // eslint-disable-next-line max-len
-var RANDOM_SEED_PUB_KEY = 'tpubD8X9JnC6UVearYMvty3RNHgeboMFEnRusUoD5uHixU3RosJxwHg4jZGpwSnhB9mfjaFbzpyJMzpGPaxM146RWMEVRtjVVMQvv2JqPgJbKLh';
+const RANDOM_SEED_PUB_KEY = 'tpubD8X9JnC6UVearYMvty3RNHgeboMFEnRusUoD5uHixU3RosJxwHg4jZGpwSnhB9mfjaFbzpyJMzpGPaxM146RWMEVRtjVVMQvv2JqPgJbKLh';
 
-describe('wallet', function() {
-  var readOnlyWallet;
-  var addresses = addressFixtures.addresses;
-  var changeAddresses = addressFixtures.changeAddresses;
-  var sandbox = sinon.createSandbox();
+describe('wallet', () => {
+  let readOnlyWallet;
+  const { addresses } = addressFixtures;
+  const { changeAddresses } = addressFixtures;
+  const sandbox = sinon.createSandbox();
 
-  beforeEach(function() {
+  beforeEach(() => {
     // this should be treated as a convenient read-only wallet
     readOnlyWallet = Wallet.deserialize(JSON.stringify(fixtures));
   });
 
-  afterEach(function(){
+  afterEach(()=> {
     sandbox.restore();
   });
 
-  describe('constructor', function() {
-    it('with seed', function() {
-      var wallet = new Wallet({
+  describe('constructor', () => {
+    it('with seed', () => {
+      const wallet = new Wallet({
         networkName: 'bitcoin',
-        seed: RANDOM_SEED
+        seed: RANDOM_SEED,
       });
       assert.ok(wallet);
       assert.equal(wallet.isLocked, false);
     });
 
-    it('with publicKey', function() {
-      var accounts = readOnlyWallet.accounts;
-      var publicKey = {
-        p2pkh: accounts.p2pkh.base.publicExtendedKey
+    it('with publicKey', () => {
+      const { accounts } = readOnlyWallet;
+      const publicKey = {
+        p2pkh: accounts.p2pkh.base.publicExtendedKey,
       };
-      var wallet = new Wallet({
+      const wallet = new Wallet({
         networkName: 'bitcoin',
-        publicKey: JSON.stringify(publicKey)
+        publicKey: JSON.stringify(publicKey),
       });
       assert.equal(wallet.accounts.p2pkh.base.publicExtendedKey, accounts.p2pkh.base.publicExtendedKey);
       assert.equal(wallet.accounts.p2sh.base.publicExtendedKey, accounts.p2pkh.base.publicExtendedKey);
@@ -61,16 +61,16 @@ describe('wallet', function() {
     });
   });
 
-  describe('lock', function() {
-    it('works', function() {
-      var wallet = new Wallet({
+  describe('lock', () => {
+    it('works', () => {
+      const wallet = new Wallet({
         networkName: 'bitcoin',
-        seed: RANDOM_SEED
+        seed: RANDOM_SEED,
       });
       assert.equal(wallet.isLocked, false);
       wallet.lock();
-      Object.keys(wallet.accounts).forEach(function(key) {
-        var account = wallet.accounts[key];
+      Object.keys(wallet.accounts).forEach((key) => {
+        const account = wallet.accounts[key];
         assert.equal(account.base.privateExtendedKey, null);
         assert.equal(account.external.privateExtendedKey, null);
         assert.equal(account.internal.privateExtendedKey, null);
@@ -79,19 +79,19 @@ describe('wallet', function() {
     });
   });
 
-  describe('unlock', function() {
-    it('works', function() {
-      var publicKey = {
+  describe('unlock', () => {
+    it('works', () => {
+      const publicKey = {
         p2pkh: RANDOM_SEED_PUB_KEY,
       };
-      var wallet = new Wallet({
+      const wallet = new Wallet({
         networkName: 'bitcoin',
-        publicKey: JSON.stringify(publicKey)
+        publicKey: JSON.stringify(publicKey),
       });
       assert.equal(wallet.isLocked, true);
       wallet.unlock(RANDOM_SEED);
-      Object.keys(wallet.accounts).forEach(function(key) {
-        var account = wallet.accounts[key];
+      Object.keys(wallet.accounts).forEach((key) => {
+        const account = wallet.accounts[key];
         assert.ok(account.base.privateExtendedKey);
         assert.ok(account.external.privateExtendedKey);
         assert.ok(account.internal.privateExtendedKey);
@@ -100,30 +100,30 @@ describe('wallet', function() {
     });
   });
 
-  describe('publicKey', function() {
-    it('works', function() {
-      var wallet = new Wallet({
+  describe('publicKey', () => {
+    it('works', () => {
+      const wallet = new Wallet({
         networkName: 'bitcoin',
-        seed: RANDOM_SEED
+        seed: RANDOM_SEED,
       });
-      var publicKey = wallet.publicKey();
+      const publicKey = wallet.publicKey();
       assert.ok(publicKey);
     });
 
-    it('key is valid', function() {
-      var wallet = new Wallet({
+    it('key is valid', () => {
+      const wallet = new Wallet({
         networkName: 'bitcoin',
-        seed: RANDOM_SEED
+        seed: RANDOM_SEED,
       });
-      var publicKey = wallet.publicKey();
-      var secondWalet = new Wallet({
+      const publicKey = wallet.publicKey();
+      const secondWalet = new Wallet({
         networkName: 'bitcoin',
-        publicKey: publicKey
+        publicKey,
       });
       secondWalet.unlock(RANDOM_SEED);
-      Object.keys(wallet.accounts).forEach(function(key) {
-        var account = wallet.accounts[key];
-        var secondAccount = secondWalet.accounts[key];
+      Object.keys(wallet.accounts).forEach((key) => {
+        const account = wallet.accounts[key];
+        const secondAccount = secondWalet.accounts[key];
         assert.equal(account.base.publicExtendedKey, secondAccount.base.publicExtendedKey);
         assert.equal(account.base.privateExtendedKey, secondAccount.base.privateExtendedKey);
         assert.equal(account.external.publicExtendedKey, secondAccount.external.publicExtendedKey);
@@ -134,28 +134,28 @@ describe('wallet', function() {
     });
   });
 
-  describe('getBalance', function() {
-    it('works', function() {
+  describe('getBalance', () => {
+    it('works', () => {
       assert.equal(readOnlyWallet.getBalance(), 0);
     });
 
-    it('calculates it correctly when one of the head transactions has value 0', function(done) {
-      var myWallet = Wallet.deserialize(JSON.stringify(fixtures));
+    it('calculates it correctly when one of the head transactions has value 0', (done) => {
+      const myWallet = Wallet.deserialize(JSON.stringify(fixtures));
 
       sandbox.stub(myWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedAddressZero]);
 
-      fundAddressZero(myWallet, function(err, fundingTx) {
+      fundAddressZero(myWallet, (err, fundingTx) => {
         if (err) return done(err);
 
         myWallet.api.transactions.get.restore();
         sandbox.stub(myWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedChangeAddress]);
 
-        var tx = new Transaction();
+        const tx = new Transaction();
         tx.addInput(fundingTx.getHash(), 0);
         tx.addOutput(Address.toOutputScript(myWallet.accounts.p2pkh.changeAddresses[0], network), 200000);
 
         sandbox.stub(myWallet.api.transactions, 'propagate').resolves();
-        myWallet.sendTx(tx, function(err) {
+        myWallet.sendTx(tx, (err) => {
           if (err) return done(err);
           myWallet.api.transactions.propagate.restore();
 
@@ -166,12 +166,12 @@ describe('wallet', function() {
     });
 
     function fundAddressZero(wallet, done) {
-      var tx = new Transaction();
+      const tx = new Transaction();
       tx.addInput((new Transaction()).getHash(), 0);
       tx.addOutput(Address.toOutputScript(wallet.accounts.p2pkh.addresses[0], network), 200000);
 
       sandbox.stub(wallet.api.transactions, 'propagate').resolves();
-      wallet.sendTx(tx, function(err) {
+      wallet.sendTx(tx, (err) => {
         wallet.api.transactions.propagate.restore();
         if (err) return done(err);
         done(null, tx);
@@ -179,20 +179,20 @@ describe('wallet', function() {
     }
   });
 
-  describe('getNextAddress', function() {
-    it('works', function() {
+  describe('getNextAddress', () => {
+    it('works', () => {
       assert.deepEqual(readOnlyWallet.getNextAddress(true), 'mr7dXSfei5TQPmkJhA6cLmrwnhihaqbCUy');
     });
   });
 
-  describe('getNextChangeAddress', function() {
-    it('works', function() {
+  describe('getNextChangeAddress', () => {
+    it('works', () => {
       assert.deepEqual(readOnlyWallet.getNextChangeAddress(), 'mm1Y2FNfKCvvP6e67wyyxBoQkkwWXyJmDB');
     });
   });
 
-  describe('getPrivateKeyForAddress', function(){
-    it('returns the private key for the given address', function(){
+  describe('getPrivateKeyForAddress', ()=> {
+    it('returns the private key for the given address', ()=> {
       assert.equal(
         readOnlyWallet.getPrivateKeyForAddress(addresses[1]).toWIF(),
         wif.encode(network.wif, readOnlyWallet.accounts.p2pkh.external.deriveChild(1).privateKey, true)
@@ -203,17 +203,17 @@ describe('wallet', function() {
       );
     });
 
-    it('raises an error when address is not found', function(){
-      assert.throws(function() {
+    it('raises an error when address is not found', ()=> {
+      assert.throws(() => {
         readOnlyWallet.getPrivateKeyForAddress(changeAddresses[changeAddresses.length]);
       }, /Unknown address. Make sure the address is from the keychain and has been generated./);
     });
   });
 
-  describe('processTx', function() {
-    var tx, prevTx, externalAddress, myWallet, nextAddress, nextChangeAddress;
+  describe('processTx', () => {
+    let tx, prevTx, externalAddress, myWallet, nextAddress, nextChangeAddress;
 
-    before(function(done) {
+    before((done) => {
       externalAddress = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs';
       myWallet = Wallet.deserialize(JSON.stringify(fixtures));
       nextAddress = myWallet.getNextAddress(true);
@@ -234,54 +234,54 @@ describe('wallet', function() {
       sandbox.stub(myWallet.api.transactions, 'propagate').resolves();
       async.series([
         function(cb) { myWallet.sendTx(prevTx, cb);},
-        function(cb) { myWallet.sendTx(tx, cb);}
-      ], function(err) {
+        function(cb) { myWallet.sendTx(tx, cb);},
+      ], (err) => {
         myWallet.api.transactions.propagate.restore();
         myWallet.api.transactions.get.restore();
         done(err);
       });
     });
 
-    describe('address derivation', function() {
-      var myWalletSnapshot;
-      before(function() {
+    describe('address derivation', () => {
+      let myWalletSnapshot;
+      before(() => {
         myWalletSnapshot = myWallet.serialize();
       });
 
-      after(function() {
+      after(() => {
         myWallet = Wallet.deserialize(myWalletSnapshot);
       });
 
-      it('adds the next change address to changeAddresses if the it is used to receive funds', function() {
-        var expected = myWallet.accounts.p2pkh.changeAddresses.length - 1;
+      it('adds the next change address to changeAddresses if the it is used to receive funds', () => {
+        const expected = myWallet.accounts.p2pkh.changeAddresses.length - 1;
         assert.equal(myWallet.accounts.p2pkh.changeAddresses.indexOf(nextChangeAddress), expected);
       });
 
-      it('adds the next address to addresses if the it is used to receive funds', function() {
-        var expected = myWallet.accounts.p2pkh.addresses.length - 1;
+      it('adds the next address to addresses if the it is used to receive funds', () => {
+        const expected = myWallet.accounts.p2pkh.addresses.length - 1;
         assert.equal(myWallet.accounts.p2pkh.addresses.indexOf(nextAddress), expected);
       });
 
-      it('does not add the same address more than once', function(done) {
+      it('does not add the same address more than once', (done) => {
         sandbox.stub(myWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedAddressZero]);
-        var nextNextAddress = myWallet.getNextAddress(true);
+        const nextNextAddress = myWallet.getNextAddress(true);
 
-        var aTx = new Transaction();
+        const aTx = new Transaction();
         aTx.addInput((new Transaction()).getHash(), 1);
         aTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(true), network), 200000);
 
-        var bTx = new Transaction();
+        const bTx = new Transaction();
         bTx.addInput((new Transaction()).getHash(), 2);
         bTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(true), network), 200000);
 
         sandbox.stub(myWallet.api.transactions, 'propagate').resolves();
         async.series([
           function(cb) { myWallet.sendTx(aTx, cb);},
-          function(cb) { myWallet.sendTx(bTx, cb);}
-        ], function(err) {
+          function(cb) { myWallet.sendTx(bTx, cb);},
+        ], (err) => {
           myWallet.api.transactions.propagate.restore();
           if (err) return done(err);
-          var addresses = myWallet.accounts.p2pkh.addresses;
+          const { addresses } = myWallet.accounts.p2pkh;
           assert.equal(addresses.indexOf(nextNextAddress), addresses.length - 1);
           done();
         });
@@ -289,10 +289,10 @@ describe('wallet', function() {
     });
   });
 
-  describe('createTx', function() {
-    var to, value, address1, address2, unspentTxs;
+  describe('createTx', () => {
+    let to, value, address1, address2, unspentTxs;
 
-    before(function() {
+    before(() => {
       to = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs';
       value = 500000;
 
@@ -301,67 +301,67 @@ describe('wallet', function() {
       address1 = readOnlyWallet.accounts.p2pkh.addresses[0];
       address2 = readOnlyWallet.accounts.p2pkh.changeAddresses[0];
 
-      var pair0 = createTxPair(address1, 400000); // not enough for value
+      const pair0 = createTxPair(address1, 400000); // not enough for value
       unspentTxs.push(pair0.tx);
 
-      var pair1 = createTxPair(address1, 500000); // not enough for only value
+      const pair1 = createTxPair(address1, 500000); // not enough for only value
       unspentTxs.push(pair1.tx);
 
-      var pair2 = createTxPair(address2, 510000); // enough for value and fee
+      const pair2 = createTxPair(address2, 510000); // enough for value and fee
       unspentTxs.push(pair2.tx);
 
-      var pair3 = createTxPair(address2, 520000); // enough for value and fee
+      const pair3 = createTxPair(address2, 520000); // enough for value and fee
       unspentTxs.push(pair3.tx);
 
       function createTxPair(address, amount) {
-        var prevTx = new Transaction();
+        const prevTx = new Transaction();
         prevTx.addInput((new Transaction()).getHash(), 0);
         prevTx.addOutput(Address.toOutputScript(to, network), amount);
 
-        var tx = new Transaction();
+        const tx = new Transaction();
         tx.addInput(prevTx.getHash(), 0);
         tx.addOutput(Address.toOutputScript(address, network), amount);
 
-        return { prevTx: prevTx, tx: tx };
+        return { prevTx, tx };
       }
     });
 
-    describe('transaction outputs', function(){
-      it('includes the specified address and amount', function(){
-        var tx = readOnlyWallet.createTx(to, value, 0).sign();
+    describe('transaction outputs', ()=> {
+      it('includes the specified address and amount', ()=> {
+        const tx = readOnlyWallet.createTx(to, value, 0).sign();
 
         assert.equal(tx.outs.length, 2);
-        var out = tx.outs[0];
-        var outAddress = Address.fromOutputScript(out.script, network);
+        const out = tx.outs[0];
+        const outAddress = Address.fromOutputScript(out.script, network);
 
         assert.equal(outAddress.toString(), to);
         assert.equal(out.value, value);
       });
 
-      describe('change', function(){
-        it('uses the next change address', function(){
-          var fee = 0;
-          var tx = readOnlyWallet.createTx(to, value, fee).sign();
+      describe('change', ()=> {
+        it('uses the next change address', ()=> {
+          const fee = 0;
+          const tx = readOnlyWallet.createTx(to, value, fee).sign();
 
           assert.equal(tx.outs.length, 2);
-          var out = tx.outs[1];
-          var outAddress = Address.fromOutputScript(out.script, network);
+          const out = tx.outs[1];
+          const outAddress = Address.fromOutputScript(out.script, network);
 
           assert.equal(outAddress.toString(), readOnlyWallet.getNextChangeAddress());
           assert.equal(out.value, 10000);
         });
 
-        it('skips change if it is not above dust threshold', function(){
-          var fee = 9454;
-          var tx = readOnlyWallet.createTx(to, value, fee).sign();
+        it('skips change if it is not above dust threshold', ()=> {
+          const fee = 9454;
+          const tx = readOnlyWallet.createTx(to, value, fee).sign();
           assert.equal(tx.outs.length, 1);
         });
       });
     });
 
-    describe('choosing utxo', function(){
-      it('takes fees into account', function(){
-        var tx = readOnlyWallet.createTx(to, value, 0).sign();
+    describe('choosing utxo', ()=> {
+      it('takes fees into account', ()=> {
+        const tx = readOnlyWallet.createTx(to, value, 0).sign();
 
         assert.equal(tx.ins.length, 1);
         assert.deepEqual(tx.ins[0].hash, unspentTxs[2].getHash());
@@ -369,40 +369,40 @@ describe('wallet', function() {
       });
     });
 
-    describe('transaction fee', function(){
-      it('allows fee to be specified', function(){
-        var fee = 30000;
-        var tx = readOnlyWallet.createTx(to, value, fee).sign();
+    describe('transaction fee', ()=> {
+      it('allows fee to be specified', ()=> {
+        const fee = 30000;
+        const tx = readOnlyWallet.createTx(to, value, fee).sign();
 
         assert.equal(getFee(tx), fee);
       });
 
-      it('allows fee to be set to zero', function(){
+      it('allows fee to be set to zero', ()=> {
         value = 510000;
-        var fee = 0;
-        var tx = readOnlyWallet.createTx(to, value, fee).sign();
+        const fee = 0;
+        const tx = readOnlyWallet.createTx(to, value, fee).sign();
 
         assert.equal(getFee(tx), fee);
       });
 
       function getFee(tx) {
-        var inputValue = tx.ins.reduce(function(memo, input){
-          var id = Array.prototype.reverse.call(input.hash).toString('hex');
-          var prevTx = unspentTxs.filter(function(t) {
+        const inputValue = tx.ins.reduce((memo, input)=> {
+          const id = Array.prototype.reverse.call(input.hash).toString('hex');
+          const prevTx = unspentTxs.filter((t) => {
             return t.getId() === id;
           })[0];
           return memo + prevTx.outs[0].value;
         }, 0);
 
-        return tx.outs.reduce(function(memo, output){
+        return tx.outs.reduce((memo, output)=> {
           return memo - output.value;
         }, inputValue);
       }
     });
 
-    describe('signing', function(){
-      it('signes the inputs with respective keys', function(){
-        var fee = 30000;
+    describe('signing', ()=> {
+      it('signes the inputs with respective keys', ()=> {
+        const fee = 30000;
         sandbox.stub(TransactionBuilder.prototype, "sign");
         sandbox.stub(TransactionBuilder.prototype, "build");
 
@@ -414,74 +414,74 @@ describe('wallet', function() {
       });
     });
 
-    describe('validations', function(){
-      it('errors on invalid address', function(){
-        assert.throws(function() { readOnlyWallet.createTx('123', value); });
+    describe('validations', ()=> {
+      it('errors on invalid address', ()=> {
+        assert.throws(() => { readOnlyWallet.createTx('123', value); });
       });
 
-      it('errors on address with the wrong version', function(){
-        assert.throws(function() { readOnlyWallet.createTx('LNjYu1akN22USK3sUrSuJn5WoLMKX5Az9B', value); });
+      it('errors on address with the wrong version', ()=> {
+        assert.throws(() => { readOnlyWallet.createTx('LNjYu1akN22USK3sUrSuJn5WoLMKX5Az9B', value); });
       });
 
-      it('errors on below dust value', function(){
-        assert.throws(function() { readOnlyWallet.createTx(to, 546); });
+      it('errors on below dust value', ()=> {
+        assert.throws(() => { readOnlyWallet.createTx(to, 546); });
       });
 
-      it('errors on insufficient funds', function(){
-        assert.throws(function() { readOnlyWallet.createTx(to, 1415001, 3740); });
+      it('errors on insufficient funds', ()=> {
+        assert.throws(() => { readOnlyWallet.createTx(to, 1415001, 3740); });
       });
     });
 
   });
 
-  describe('estimateFees', function() {
-    var to;
+  describe('estimateFees', () => {
+    let to;
 
-    before(function(){
+    before(()=> {
       readOnlyWallet = Wallet.deserialize(JSON.stringify(fixtures)); // reset wallet
       to = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs';
     });
 
-    it('calculates it correctly with single tx input', function() {
+    it('calculates it correctly with single tx input', () => {
       assert.deepEqual(readOnlyWallet.estimateFees(20000), [2260]);
     });
 
-    it('calculates it correctly with multiple tx inputs', function() {
+    it('calculates it correctly with multiple tx inputs', () => {
       assert.deepEqual(readOnlyWallet.estimateFees(1020000), [5220]);
     });
 
-    it('calculates it correctly with utxos passed in', function() {
-      var utxos = [{
+    it('calculates it correctly with utxos passed in', () => {
+      const utxos = [{
         txId: '98440fe7035aaec39583f68a251602a5623d34f95dbd9f54e7bc8ff29551729f',
         address: 'n2rvmEac7zD1iknp7nkFfmqXM1pbbAoctw',
         value: 1520000,
         vout: 0,
-        confirmations: 3
+        confirmations: 3,
       }];
       assert.deepEqual(readOnlyWallet.estimateFees(520000, utxos), [2260]);
     });
 
-    it('throws error when unspents are invalid', function() {
-      assert.throws(function() {
+    it('throws error when unspents are invalid', () => {
+      assert.throws(() => {
         readOnlyWallet.estimateFees(to, 20000, [10000], 300);
-      }, function(e) {
+      }, (e) => {
         assert.equal(e.message, 'Expect utxos to be an array');
         return true;
       });
     });
   });
 
-  describe('sendTx', function() {
+  describe('sendTx', () => {
 
-    var tx = new Transaction();
+    const tx = new Transaction();
 
-    beforeEach(function(){
+    beforeEach(()=> {
       sandbox.stub(readOnlyWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedChangeAddress]);
     });
 
-    it('propagates the transaction through the API', function(done) {
+    it('propagates the transaction through the API', (done) => {
       sandbox.stub(readOnlyWallet.api.transactions, 'propagate').resolves();
-      readOnlyWallet.sendTx(tx, function(err) {
+      readOnlyWallet.sendTx(tx, (err) => {
         try {
           assert.ifError(err);
           assert(readOnlyWallet.api.transactions.propagate.calledWith(tx.toHex()));
@@ -492,10 +492,10 @@ describe('wallet', function() {
       });
     });
 
-    it('invokes callback with error on error', function(done) {
-      var error = new Error('oops');
+    it('invokes callback with error on error', (done) => {
+      const error = new Error('oops');
       sandbox.stub(readOnlyWallet.api.transactions, 'propagate').rejects(error);
-      readOnlyWallet.sendTx(tx, function(err) {
+      readOnlyWallet.sendTx(tx, (err) => {
         try {
           assert.equal(err, error);
           done();
@@ -506,72 +506,72 @@ describe('wallet', function() {
     });
   });
 
-  describe('createPrivateKey', function() {
-    it('works', function() {
-      var privateKey = readOnlyWallet.createPrivateKey('91tphZbASvHRsscCgB6TZibcSYwVNHzBX6xKvjFSMTNvzizaMyo');
+  describe('createPrivateKey', () => {
+    it('works', () => {
+      const privateKey = readOnlyWallet.createPrivateKey('91tphZbASvHRsscCgB6TZibcSYwVNHzBX6xKvjFSMTNvzizaMyo');
       assert(privateKey instanceof bitcoin.ECPair);
     });
   });
 
-  describe('createImportTx', function() {
-    var options;
+  describe('createImportTx', () => {
+    let options;
 
-    beforeEach(function() {
-      var node = readOnlyWallet.accounts.p2pkh.internal.deriveChild(0);
-      var privateKey = new bitcoin.ECPair(BigInteger.fromBuffer(node.privateKey), null, {
-        network: network
+    beforeEach(() => {
+      const node = readOnlyWallet.accounts.p2pkh.internal.deriveChild(0);
+      const privateKey = new bitcoin.ECPair(BigInteger.fromBuffer(node.privateKey), null, {
+        network,
       });
       options = {
-        privateKey: privateKey,
+        privateKey,
         unspents: [{
           txId: 'a3fa16de242caaa97d69f2d285377a04847edbab4eec13e9ff083e14f77b71c8',
           address: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
           value: 10000,
           vout: 0,
           type: 'p2pkh',
-          confirmations: 10
+          confirmations: 10,
         }],
         amount: 10000,
         to: 'mo7f7vngyFkPeYsYqnubdeTJfMSxSZVSnL',
-        fee: 1000
+        fee: 1000,
       };
     });
 
-    it('works', function() {
-      var tx = readOnlyWallet.createImportTx(options).sign();
+    it('works', () => {
+      const tx = readOnlyWallet.createImportTx(options).sign();
       assert(tx instanceof bitcoin.Transaction);
     });
 
-    it('errors on amount less than fee', function() {
+    it('errors on amount less than fee', () => {
       options.fee = 20000;
-      assert.throws(function() { readOnlyWallet.createImportTx(options); });
+      assert.throws(() => { readOnlyWallet.createImportTx(options); });
     });
 
   });
 
-  describe('getImportTxOptions', function() {
-    it('works', function(done) {
-      var unspents = [{
+  describe('getImportTxOptions', () => {
+    it('works', (done) => {
+      const unspents = [{
         txId: 'a3fa16de242caaa97d69f2d285377a04847edbab4eec13e9ff083e14f77b71c8',
         address: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
         value: 10000,
         vout: 0,
-        confirmations: 10
+        confirmations: 10,
       },
       {
         txId: '7e6be25012e2ee3450b1435d5115d68a9be1cb376e094877df12a1508f003937',
         address: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
         value: 10000,
         vout: 0,
-        confirmations: 0
+        confirmations: 0,
       }];
       sandbox.stub(readOnlyWallet.api.addresses, 'unspents').returns(Promise.resolve(unspents));
 
-      var node = readOnlyWallet.accounts.p2pkh.internal.deriveChild(0);
-      var privateKey = new bitcoin.ECPair(BigInteger.fromBuffer(node.privateKey), null, {
-        network: network
+      const node = readOnlyWallet.accounts.p2pkh.internal.deriveChild(0);
+      const privateKey = new bitcoin.ECPair(BigInteger.fromBuffer(node.privateKey), null, {
+        network,
       });
-      readOnlyWallet.getImportTxOptions(privateKey).then(function(options) {
+      readOnlyWallet.getImportTxOptions(privateKey).then((options) => {
         assert.equal(options.privateKey, privateKey);
         assert.equal(options.amount, 10000);
         assert.equal(options.unspents.length, 1);
@@ -581,10 +581,10 @@ describe('wallet', function() {
     });
   });
 
-  describe('createReplacement', function() {
+  describe('createReplacement', () => {
 
     function getReplacementFeePerByte(historyTx, replacement) {
-      var utxos = historyTx.ins.map(function(input) {
+      const utxos = historyTx.ins.map((input) => {
         return {
           txId: input.txid,
           type: input.type,
@@ -592,20 +592,20 @@ describe('wallet', function() {
           vout: input.vout,
           value: input.amount,
         };
-      }).concat(readOnlyWallet.getUnspentsForTx({gap: 1}));
-      var incoming = replacement.ins.reduce(function(a, x) {
-        return a + utxos.find(function(utxo) {
+      }).concat(readOnlyWallet.getUnspentsForTx({ gap: 1 }));
+      const incoming = replacement.ins.reduce((a, x) => {
+        return a + utxos.find((utxo) => {
           return utxo.txId === Buffer.from(x.hash, 'hex').reverse().toString('hex') && x.index === utxo.vout;
         }).value;
       }, 0);
-      var outgoing = replacement.outs.reduce(function (a, x) { return a + x.value; }, 0);
-      var fee = incoming - outgoing;
-      var size = replacement.ins.length * 148 + replacement.outs.length * 34 + 10;
+      const outgoing = replacement.outs.reduce((a, x) => { return a + x.value; }, 0);
+      const fee = incoming - outgoing;
+      const size = replacement.ins.length * 148 + replacement.outs.length * 34 + 10;
       return Math.ceil(fee / size);
     }
 
-    it('works (change address exist)', function() {
-      var historyTx = {
+    it('works (change address exist)', () => {
+      const historyTx = {
         amount: -10000000,
         confirmations: 0,
         csFee: 0,
@@ -629,20 +629,20 @@ describe('wallet', function() {
             amount: 10000000,
             vout: 0,
             type: 'p2sh',
-            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN'
+            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN',
           },
           {
             address: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
             amount: 89997514,
             vout: 1,
             type: 'p2pkh',
-            addr: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D'
-          }
+            addr: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
+          },
         ],
         size: 226,
-        timestamp: 1605799684000
+        timestamp: 1605799684000,
       };
-      var replacement = readOnlyWallet.createReplacement(historyTx).sign();
+      const replacement = readOnlyWallet.createReplacement(historyTx).sign();
       assert.equal(replacement.ins.length, 1);
       assert.equal(replacement.outs.length, 2);
       assert.deepEqual(replacement.replaceByFeeTx, historyTx);
@@ -650,12 +650,12 @@ describe('wallet', function() {
       assert.equal(replacement.outs[0].value, historyTx.outs[0].amount);
       assert.equal(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
 
-      var replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
+      const replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
       assert.equal(replacementFeePerByte, Math.ceil(historyTx.feePerByte * readOnlyWallet.replaceByFeeFactor));
     });
 
-    it('works (change address exist: persistence)', function() {
-      var historyTx = {
+    it('works (change address exist: persistence)', () => {
+      const historyTx = {
         amount: -99995731,
         confirmations: 0,
         csFee: 0,
@@ -679,20 +679,20 @@ describe('wallet', function() {
             amount: 99995731,
             vout: 0,
             type: 'p2sh',
-            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN'
+            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN',
           },
           {
             address: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
             amount: 1783,
             vout: 1,
             type: 'p2pkh',
-            addr: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D'
-          }
+            addr: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
+          },
         ],
         size: 226,
-        timestamp: 1605799684000
+        timestamp: 1605799684000,
       };
-      var replacement = readOnlyWallet.createReplacement(historyTx).sign();
+      const replacement = readOnlyWallet.createReplacement(historyTx).sign();
 
       assert.equal(replacement.ins.length, 2);
       assert.equal(replacement.outs.length, 2);
@@ -701,12 +701,12 @@ describe('wallet', function() {
       assert.equal(replacement.outs[0].value, historyTx.outs[0].amount);
       assert.equal(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
 
-      var replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
+      const replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
       assert.equal(replacementFeePerByte, Math.ceil(historyTx.feePerByte * readOnlyWallet.replaceByFeeFactor));
     });
 
-    it('works (change address exist: insufficient funds)', function() {
-      var historyTx = {
+    it('works (change address exist: insufficient funds)', () => {
+      const historyTx = {
         amount: -99935631,
         confirmations: 0,
         csFee: 0,
@@ -730,27 +730,27 @@ describe('wallet', function() {
             amount: 99935631,
             vout: 0,
             type: 'p2sh',
-            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN'
+            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN',
           },
           {
             address: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
             amount: 61883,
             vout: 1,
             type: 'p2pkh',
-            addr: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D'
-          }
+            addr: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
+          },
         ],
         size: 226,
-        timestamp: 1605799684000
+        timestamp: 1605799684000,
       };
       readOnlyWallet.replaceByFeeFactor = 200;
-      assert.throws(function() {
+      assert.throws(() => {
         readOnlyWallet.createReplacement(historyTx).sign();
       }, /Insufficient funds/);
     });
 
-    it('works (no change address)', function() {
-      var historyTx = {
+    it('works (no change address)', () => {
+      const historyTx = {
         amount: -99667200,
         confirmations: 0,
         csFee: 0,
@@ -774,14 +774,14 @@ describe('wallet', function() {
             amount: 99667200,
             vout: 0,
             type: 'p2sh',
-            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN'
+            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN',
           },
         ],
         size: 192,
-        timestamp: 1605799684000
+        timestamp: 1605799684000,
       };
 
-      var replacement = readOnlyWallet.createReplacement(historyTx).sign();
+      const replacement = readOnlyWallet.createReplacement(historyTx).sign();
 
       assert.equal(replacement.ins.length, 4);
       assert.equal(replacement.outs.length, 1);
@@ -790,12 +790,12 @@ describe('wallet', function() {
       assert.equal(replacement.outs[0].value, historyTx.outs[0].amount);
       assert.equal(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
 
-      var replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
+      const replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
       assert.equal(replacementFeePerByte, 2741);
     });
 
-    it('works (no change address: need to add)', function() {
-      var historyTx = {
+    it('works (no change address: need to add)', () => {
+      const historyTx = {
         amount: -9999000,
         confirmations: 0,
         csFee: 0,
@@ -819,14 +819,14 @@ describe('wallet', function() {
             amount: 99990000,
             vout: 0,
             type: 'p2sh',
-            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN'
+            addr: 'mxDYgs7niUuoRdpmioN4ApaGqQJN3LthPN',
           },
         ],
         size: 192,
-        timestamp: 1605799684000
+        timestamp: 1605799684000,
       };
 
-      var replacement = readOnlyWallet.createReplacement(historyTx).sign();
+      const replacement = readOnlyWallet.createReplacement(historyTx).sign();
 
       assert.equal(replacement.ins.length, 2);
       assert.equal(replacement.outs.length, 2);
@@ -835,21 +835,21 @@ describe('wallet', function() {
       assert.equal(replacement.outs[0].value, historyTx.outs[0].amount);
       assert.equal(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
 
-      var replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
+      const replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
       assert.equal(replacementFeePerByte, Math.ceil(historyTx.feePerByte * readOnlyWallet.replaceByFeeFactor));
     });
   });
 
-  describe('exportPrivateKeys', function() {
-    it('works', function() {
-      var csv = readOnlyWallet.exportPrivateKeys();
+  describe('exportPrivateKeys', () => {
+    it('works', () => {
+      const csv = readOnlyWallet.exportPrivateKeys();
       assert.equal(typeof csv, 'string');
     });
 
-    it('errors on missing unspent address', function() {
-      var myWallet = Wallet.deserialize(JSON.stringify(fixtures));
+    it('errors on missing unspent address', () => {
+      const myWallet = Wallet.deserialize(JSON.stringify(fixtures));
       myWallet.unspents.push('missing_address');
-      assert.throws(function() {
+      assert.throws(() => {
         myWallet.exportPrivateKeys();
       }, /Unknown address. Make sure the address is from the keychain and has been generated./);
     });
