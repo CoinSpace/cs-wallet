@@ -22,7 +22,7 @@ describe('validator', () => {
         assert.throws(()=> {
           validate.preCreateTx('123', value, network);
         }, (e) => {
-          assert.equal(e.message, 'Invalid address');
+          assert.strictEqual(e.message, 'Invalid address');
           return true;
         });
       });
@@ -45,9 +45,9 @@ describe('validator', () => {
         assert.throws(() => {
           validate.preCreateTx('myYBF2Yo1LUthn3eDopEWA4a6sj4UmsWzf', 546, network);
         }, (e) => {
-          assert.equal(e.message, "Invalid value");
-          assert.equal(e.details, "Not above dust threshold");
-          assert.equal(e.dustThreshold, 546);
+          assert.strictEqual(e.message, "Invalid value");
+          assert.strictEqual(e.details, "Not above dust threshold");
+          assert.strictEqual(e.dustThreshold, 546);
           return true;
         });
       });
@@ -63,7 +63,7 @@ describe('validator', () => {
             builder: { inputs: { length: readOnlyWallet.maxTxInputs + 1 } },
           });
         }, (e) => {
-          assert.equal(e.message, "Transaction too large");
+          assert.strictEqual(e.message, "Transaction too large");
           return true;
         });
       });
@@ -77,8 +77,8 @@ describe('validator', () => {
             hasIncludingZeroConf: 1410000,
           });
         }, (e) => {
-          assert.equal(e.message, "Insufficient funds");
-          assert.equal(e.details, null);
+          assert.strictEqual(e.message, "Insufficient funds");
+          assert.strictEqual(e.details, undefined);
           return true;
         });
       });
@@ -92,8 +92,8 @@ describe('validator', () => {
             hasIncludingZeroConf: 1420001,
           });
         }, (e) => {
-          assert.equal(e.message, "Insufficient funds");
-          assert.equal(e.details, "Additional funds confirmation pending");
+          assert.strictEqual(e.message, "Insufficient funds");
+          assert.strictEqual(e.details, "Additional funds confirmation pending");
           return true;
         });
       });

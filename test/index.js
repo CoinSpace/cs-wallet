@@ -41,7 +41,7 @@ describe('wallet', () => {
         seed: RANDOM_SEED,
       });
       assert.ok(wallet);
-      assert.equal(wallet.isLocked, false);
+      assert.strictEqual(wallet.isLocked, false);
     });
 
     it('with publicKey', () => {
@@ -53,10 +53,10 @@ describe('wallet', () => {
         networkName: 'bitcoin',
         publicKey: JSON.stringify(publicKey),
       });
-      assert.equal(wallet.accounts.p2pkh.base.publicExtendedKey, accounts.p2pkh.base.publicExtendedKey);
-      assert.equal(wallet.accounts.p2sh.base.publicExtendedKey, accounts.p2pkh.base.publicExtendedKey);
-      assert.equal(wallet.accounts.p2wpkh.base.publicExtendedKey, accounts.p2pkh.base.publicExtendedKey);
-      assert.equal(wallet.isLocked, true);
+      assert.strictEqual(wallet.accounts.p2pkh.base.publicExtendedKey, accounts.p2pkh.base.publicExtendedKey);
+      assert.strictEqual(wallet.accounts.p2sh.base.publicExtendedKey, accounts.p2pkh.base.publicExtendedKey);
+      assert.strictEqual(wallet.accounts.p2wpkh.base.publicExtendedKey, accounts.p2pkh.base.publicExtendedKey);
+      assert.strictEqual(wallet.isLocked, true);
       assert.ok(wallet);
     });
   });
@@ -67,15 +67,15 @@ describe('wallet', () => {
         networkName: 'bitcoin',
         seed: RANDOM_SEED,
       });
-      assert.equal(wallet.isLocked, false);
+      assert.strictEqual(wallet.isLocked, false);
       wallet.lock();
       Object.keys(wallet.accounts).forEach((key) => {
         const account = wallet.accounts[key];
-        assert.equal(account.base.privateExtendedKey, null);
-        assert.equal(account.external.privateExtendedKey, null);
-        assert.equal(account.internal.privateExtendedKey, null);
+        assert.strictEqual(account.base.privateExtendedKey, null);
+        assert.strictEqual(account.external.privateExtendedKey, null);
+        assert.strictEqual(account.internal.privateExtendedKey, null);
       });
-      assert.equal(wallet.isLocked, true);
+      assert.strictEqual(wallet.isLocked, true);
     });
   });
 
@@ -88,7 +88,7 @@ describe('wallet', () => {
         networkName: 'bitcoin',
         publicKey: JSON.stringify(publicKey),
       });
-      assert.equal(wallet.isLocked, true);
+      assert.strictEqual(wallet.isLocked, true);
       wallet.unlock(RANDOM_SEED);
       Object.keys(wallet.accounts).forEach((key) => {
         const account = wallet.accounts[key];
@@ -96,7 +96,7 @@ describe('wallet', () => {
         assert.ok(account.external.privateExtendedKey);
         assert.ok(account.internal.privateExtendedKey);
       });
-      assert.equal(wallet.isLocked, false);
+      assert.strictEqual(wallet.isLocked, false);
     });
   });
 
@@ -124,19 +124,19 @@ describe('wallet', () => {
       Object.keys(wallet.accounts).forEach((key) => {
         const account = wallet.accounts[key];
         const secondAccount = secondWalet.accounts[key];
-        assert.equal(account.base.publicExtendedKey, secondAccount.base.publicExtendedKey);
-        assert.equal(account.base.privateExtendedKey, secondAccount.base.privateExtendedKey);
-        assert.equal(account.external.publicExtendedKey, secondAccount.external.publicExtendedKey);
-        assert.equal(account.external.privateExtendedKey, secondAccount.external.privateExtendedKey);
-        assert.equal(account.internal.publicExtendedKey, secondAccount.internal.publicExtendedKey);
-        assert.equal(account.internal.privateExtendedKey, secondAccount.internal.privateExtendedKey);
+        assert.strictEqual(account.base.publicExtendedKey, secondAccount.base.publicExtendedKey);
+        assert.strictEqual(account.base.privateExtendedKey, secondAccount.base.privateExtendedKey);
+        assert.strictEqual(account.external.publicExtendedKey, secondAccount.external.publicExtendedKey);
+        assert.strictEqual(account.external.privateExtendedKey, secondAccount.external.privateExtendedKey);
+        assert.strictEqual(account.internal.publicExtendedKey, secondAccount.internal.publicExtendedKey);
+        assert.strictEqual(account.internal.privateExtendedKey, secondAccount.internal.privateExtendedKey);
       });
     });
   });
 
   describe('getBalance', () => {
     it('works', () => {
-      assert.equal(readOnlyWallet.getBalance(), 0);
+      assert.strictEqual(readOnlyWallet.getBalance(), 0);
     });
 
     it('calculates it correctly when one of the head transactions has value 0', (done) => {
@@ -159,7 +159,7 @@ describe('wallet', () => {
           if (err) return done(err);
           myWallet.api.transactions.propagate.restore();
 
-          assert.equal(myWallet.getBalance(), 200000);
+          assert.strictEqual(myWallet.getBalance(), 200000);
           done();
         });
       });
@@ -193,11 +193,11 @@ describe('wallet', () => {
 
   describe('getPrivateKeyForAddress', ()=> {
     it('returns the private key for the given address', ()=> {
-      assert.equal(
+      assert.strictEqual(
         readOnlyWallet.getPrivateKeyForAddress(addresses[1]).toWIF(),
         wif.encode(network.wif, readOnlyWallet.accounts.p2pkh.external.deriveChild(1).privateKey, true)
       );
-      assert.equal(
+      assert.strictEqual(
         readOnlyWallet.getPrivateKeyForAddress(changeAddresses[0]).toWIF(),
         wif.encode(network.wif, readOnlyWallet.accounts.p2pkh.internal.deriveChild(0).privateKey, true)
       );
@@ -254,12 +254,12 @@ describe('wallet', () => {
 
       it('adds the next change address to changeAddresses if the it is used to receive funds', () => {
         const expected = myWallet.accounts.p2pkh.changeAddresses.length - 1;
-        assert.equal(myWallet.accounts.p2pkh.changeAddresses.indexOf(nextChangeAddress), expected);
+        assert.strictEqual(myWallet.accounts.p2pkh.changeAddresses.indexOf(nextChangeAddress), expected);
       });
 
       it('adds the next address to addresses if the it is used to receive funds', () => {
         const expected = myWallet.accounts.p2pkh.addresses.length - 1;
-        assert.equal(myWallet.accounts.p2pkh.addresses.indexOf(nextAddress), expected);
+        assert.strictEqual(myWallet.accounts.p2pkh.addresses.indexOf(nextAddress), expected);
       });
 
       it('does not add the same address more than once', (done) => {
@@ -282,7 +282,7 @@ describe('wallet', () => {
           myWallet.api.transactions.propagate.restore();
           if (err) return done(err);
           const { addresses } = myWallet.accounts.p2pkh;
-          assert.equal(addresses.indexOf(nextNextAddress), addresses.length - 1);
+          assert.strictEqual(addresses.indexOf(nextNextAddress), addresses.length - 1);
           done();
         });
       });
@@ -330,12 +330,12 @@ describe('wallet', () => {
       it('includes the specified address and amount', ()=> {
         const tx = readOnlyWallet.createTx(to, value, 0).sign();
 
-        assert.equal(tx.outs.length, 2);
+        assert.strictEqual(tx.outs.length, 2);
         const out = tx.outs[0];
         const outAddress = Address.fromOutputScript(out.script, network);
 
-        assert.equal(outAddress.toString(), to);
-        assert.equal(out.value, value);
+        assert.strictEqual(outAddress.toString(), to);
+        assert.strictEqual(out.value, value);
       });
 
       describe('change', ()=> {
@@ -343,18 +343,18 @@ describe('wallet', () => {
           const fee = 0;
           const tx = readOnlyWallet.createTx(to, value, fee).sign();
 
-          assert.equal(tx.outs.length, 2);
+          assert.strictEqual(tx.outs.length, 2);
           const out = tx.outs[1];
           const outAddress = Address.fromOutputScript(out.script, network);
 
-          assert.equal(outAddress.toString(), readOnlyWallet.getNextChangeAddress());
-          assert.equal(out.value, 10000);
+          assert.strictEqual(outAddress.toString(), readOnlyWallet.getNextChangeAddress());
+          assert.strictEqual(out.value, 10000);
         });
 
         it('skips change if it is not above dust threshold', ()=> {
           const fee = 9454;
           const tx = readOnlyWallet.createTx(to, value, fee).sign();
-          assert.equal(tx.outs.length, 1);
+          assert.strictEqual(tx.outs.length, 1);
         });
       });
     });
@@ -363,9 +363,9 @@ describe('wallet', () => {
       it('takes fees into account', ()=> {
         const tx = readOnlyWallet.createTx(to, value, 0).sign();
 
-        assert.equal(tx.ins.length, 1);
+        assert.strictEqual(tx.ins.length, 1);
         assert.deepEqual(tx.ins[0].hash, unspentTxs[2].getHash());
-        assert.equal(tx.ins[0].index, 0);
+        assert.strictEqual(tx.ins[0].index, 0);
       });
     });
 
@@ -374,7 +374,7 @@ describe('wallet', () => {
         const fee = 30000;
         const tx = readOnlyWallet.createTx(to, value, fee).sign();
 
-        assert.equal(getFee(tx), fee);
+        assert.strictEqual(getFee(tx), fee);
       });
 
       it('allows fee to be set to zero', ()=> {
@@ -382,7 +382,7 @@ describe('wallet', () => {
         const fee = 0;
         const tx = readOnlyWallet.createTx(to, value, fee).sign();
 
-        assert.equal(getFee(tx), fee);
+        assert.strictEqual(getFee(tx), fee);
       });
 
       function getFee(tx) {
@@ -465,7 +465,7 @@ describe('wallet', () => {
       assert.throws(() => {
         readOnlyWallet.estimateFees(to, 20000, [10000], 300);
       }, (e) => {
-        assert.equal(e.message, 'Expect utxos to be an array');
+        assert.strictEqual(e.message, 'Expect utxos to be an array');
         return true;
       });
     });
@@ -497,7 +497,7 @@ describe('wallet', () => {
       sandbox.stub(readOnlyWallet.api.transactions, 'propagate').rejects(error);
       readOnlyWallet.sendTx(tx, (err) => {
         try {
-          assert.equal(err, error);
+          assert.strictEqual(err, error);
           done();
         } catch (err) {
           done(err);
@@ -572,9 +572,9 @@ describe('wallet', () => {
         network,
       });
       readOnlyWallet.getImportTxOptions(privateKey).then((options) => {
-        assert.equal(options.privateKey, privateKey);
-        assert.equal(options.amount, 10000);
-        assert.equal(options.unspents.length, 1);
+        assert.strictEqual(options.privateKey, privateKey);
+        assert.strictEqual(options.amount, 10000);
+        assert.strictEqual(options.unspents.length, 1);
         assert.deepEqual(options.unspents[0], unspents[0]);
         done();
       }).catch(done);
@@ -643,15 +643,15 @@ describe('wallet', () => {
         timestamp: 1605799684000,
       };
       const replacement = readOnlyWallet.createReplacement(historyTx).sign();
-      assert.equal(replacement.ins.length, 1);
-      assert.equal(replacement.outs.length, 2);
+      assert.strictEqual(replacement.ins.length, 1);
+      assert.strictEqual(replacement.outs.length, 2);
       assert.deepEqual(replacement.replaceByFeeTx, historyTx);
 
-      assert.equal(replacement.outs[0].value, historyTx.outs[0].amount);
-      assert.equal(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
+      assert.strictEqual(replacement.outs[0].value, historyTx.outs[0].amount);
+      assert.strictEqual(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
 
       const replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
-      assert.equal(replacementFeePerByte, Math.ceil(historyTx.feePerByte * readOnlyWallet.replaceByFeeFactor));
+      assert.strictEqual(replacementFeePerByte, Math.ceil(historyTx.feePerByte * readOnlyWallet.replaceByFeeFactor));
     });
 
     it('works (change address exist: persistence)', () => {
@@ -694,15 +694,15 @@ describe('wallet', () => {
       };
       const replacement = readOnlyWallet.createReplacement(historyTx).sign();
 
-      assert.equal(replacement.ins.length, 2);
-      assert.equal(replacement.outs.length, 2);
+      assert.strictEqual(replacement.ins.length, 2);
+      assert.strictEqual(replacement.outs.length, 2);
       assert.deepEqual(replacement.replaceByFeeTx, historyTx);
 
-      assert.equal(replacement.outs[0].value, historyTx.outs[0].amount);
-      assert.equal(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
+      assert.strictEqual(replacement.outs[0].value, historyTx.outs[0].amount);
+      assert.strictEqual(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
 
       const replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
-      assert.equal(replacementFeePerByte, Math.ceil(historyTx.feePerByte * readOnlyWallet.replaceByFeeFactor));
+      assert.strictEqual(replacementFeePerByte, Math.ceil(historyTx.feePerByte * readOnlyWallet.replaceByFeeFactor));
     });
 
     it('works (change address exist: insufficient funds)', () => {
@@ -783,15 +783,15 @@ describe('wallet', () => {
 
       const replacement = readOnlyWallet.createReplacement(historyTx).sign();
 
-      assert.equal(replacement.ins.length, 4);
-      assert.equal(replacement.outs.length, 1);
+      assert.strictEqual(replacement.ins.length, 4);
+      assert.strictEqual(replacement.outs.length, 1);
       assert.deepEqual(replacement.replaceByFeeTx, historyTx);
 
-      assert.equal(replacement.outs[0].value, historyTx.outs[0].amount);
-      assert.equal(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
+      assert.strictEqual(replacement.outs[0].value, historyTx.outs[0].amount);
+      assert.strictEqual(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
 
       const replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
-      assert.equal(replacementFeePerByte, 2741);
+      assert.strictEqual(replacementFeePerByte, 2741);
     });
 
     it('works (no change address: need to add)', () => {
@@ -828,22 +828,22 @@ describe('wallet', () => {
 
       const replacement = readOnlyWallet.createReplacement(historyTx).sign();
 
-      assert.equal(replacement.ins.length, 2);
-      assert.equal(replacement.outs.length, 2);
+      assert.strictEqual(replacement.ins.length, 2);
+      assert.strictEqual(replacement.outs.length, 2);
       assert.deepEqual(replacement.replaceByFeeTx, historyTx);
 
-      assert.equal(replacement.outs[0].value, historyTx.outs[0].amount);
-      assert.equal(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
+      assert.strictEqual(replacement.outs[0].value, historyTx.outs[0].amount);
+      assert.strictEqual(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
 
       const replacementFeePerByte = getReplacementFeePerByte(historyTx, replacement);
-      assert.equal(replacementFeePerByte, Math.ceil(historyTx.feePerByte * readOnlyWallet.replaceByFeeFactor));
+      assert.strictEqual(replacementFeePerByte, Math.ceil(historyTx.feePerByte * readOnlyWallet.replaceByFeeFactor));
     });
   });
 
   describe('exportPrivateKeys', () => {
     it('works', () => {
       const csv = readOnlyWallet.exportPrivateKeys();
-      assert.equal(typeof csv, 'string');
+      assert.strictEqual(typeof csv, 'string');
     });
 
     it('errors on missing unspent address', () => {
