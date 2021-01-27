@@ -181,13 +181,13 @@ describe('wallet', () => {
 
   describe('getNextAddress', () => {
     it('works', () => {
-      assert.deepEqual(readOnlyWallet.getNextAddress(true), 'mr7dXSfei5TQPmkJhA6cLmrwnhihaqbCUy');
+      assert.deepStrictEqual(readOnlyWallet.getNextAddress(true), 'mr7dXSfei5TQPmkJhA6cLmrwnhihaqbCUy');
     });
   });
 
   describe('getNextChangeAddress', () => {
     it('works', () => {
-      assert.deepEqual(readOnlyWallet.getNextChangeAddress(), 'mm1Y2FNfKCvvP6e67wyyxBoQkkwWXyJmDB');
+      assert.deepStrictEqual(readOnlyWallet.getNextChangeAddress(), 'mm1Y2FNfKCvvP6e67wyyxBoQkkwWXyJmDB');
     });
   });
 
@@ -364,7 +364,7 @@ describe('wallet', () => {
         const tx = readOnlyWallet.createTx(to, value, 0).sign();
 
         assert.strictEqual(tx.ins.length, 1);
-        assert.deepEqual(tx.ins[0].hash, unspentTxs[2].getHash());
+        assert.deepStrictEqual(tx.ins[0].hash, unspentTxs[2].getHash());
         assert.strictEqual(tx.ins[0].index, 0);
       });
     });
@@ -403,8 +403,8 @@ describe('wallet', () => {
     describe('signing', ()=> {
       it('signes the inputs with respective keys', ()=> {
         const fee = 30000;
-        sandbox.stub(TransactionBuilder.prototype, "sign");
-        sandbox.stub(TransactionBuilder.prototype, "build");
+        sandbox.stub(TransactionBuilder.prototype, 'sign');
+        sandbox.stub(TransactionBuilder.prototype, 'build');
 
         readOnlyWallet.createTx(to, value, fee).sign();
 
@@ -435,19 +435,16 @@ describe('wallet', () => {
   });
 
   describe('estimateFees', () => {
-    let to;
-
     before(()=> {
       readOnlyWallet = Wallet.deserialize(JSON.stringify(fixtures)); // reset wallet
-      to = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs';
     });
 
     it('calculates it correctly with single tx input', () => {
-      assert.deepEqual(readOnlyWallet.estimateFees(20000), [2260]);
+      assert.deepStrictEqual(readOnlyWallet.estimateFees(20000), [2260]);
     });
 
     it('calculates it correctly with multiple tx inputs', () => {
-      assert.deepEqual(readOnlyWallet.estimateFees(1020000), [5220]);
+      assert.deepStrictEqual(readOnlyWallet.estimateFees(1020000), [5220]);
     });
 
     it('calculates it correctly with utxos passed in', () => {
@@ -458,12 +455,12 @@ describe('wallet', () => {
         vout: 0,
         confirmations: 3,
       }];
-      assert.deepEqual(readOnlyWallet.estimateFees(520000, utxos), [2260]);
+      assert.deepStrictEqual(readOnlyWallet.estimateFees(520000, utxos), [2260]);
     });
 
     it('throws error when unspents are invalid', () => {
       assert.throws(() => {
-        readOnlyWallet.estimateFees(to, 20000, [10000], 300);
+        readOnlyWallet.estimateFees(20000, 20000, [10000], 300);
       }, (e) => {
         assert.strictEqual(e.message, 'Expect utxos to be an array');
         return true;
@@ -575,7 +572,7 @@ describe('wallet', () => {
         assert.strictEqual(options.privateKey, privateKey);
         assert.strictEqual(options.amount, 10000);
         assert.strictEqual(options.unspents.length, 1);
-        assert.deepEqual(options.unspents[0], unspents[0]);
+        assert.deepStrictEqual(options.unspents[0], unspents[0]);
         done();
       }).catch(done);
     });
@@ -645,7 +642,7 @@ describe('wallet', () => {
       const replacement = readOnlyWallet.createReplacement(historyTx).sign();
       assert.strictEqual(replacement.ins.length, 1);
       assert.strictEqual(replacement.outs.length, 2);
-      assert.deepEqual(replacement.replaceByFeeTx, historyTx);
+      assert.deepStrictEqual(replacement.replaceByFeeTx, historyTx);
 
       assert.strictEqual(replacement.outs[0].value, historyTx.outs[0].amount);
       assert.strictEqual(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
@@ -696,7 +693,7 @@ describe('wallet', () => {
 
       assert.strictEqual(replacement.ins.length, 2);
       assert.strictEqual(replacement.outs.length, 2);
-      assert.deepEqual(replacement.replaceByFeeTx, historyTx);
+      assert.deepStrictEqual(replacement.replaceByFeeTx, historyTx);
 
       assert.strictEqual(replacement.outs[0].value, historyTx.outs[0].amount);
       assert.strictEqual(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
@@ -785,7 +782,7 @@ describe('wallet', () => {
 
       assert.strictEqual(replacement.ins.length, 4);
       assert.strictEqual(replacement.outs.length, 1);
-      assert.deepEqual(replacement.replaceByFeeTx, historyTx);
+      assert.deepStrictEqual(replacement.replaceByFeeTx, historyTx);
 
       assert.strictEqual(replacement.outs[0].value, historyTx.outs[0].amount);
       assert.strictEqual(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
@@ -830,7 +827,7 @@ describe('wallet', () => {
 
       assert.strictEqual(replacement.ins.length, 2);
       assert.strictEqual(replacement.outs.length, 2);
-      assert.deepEqual(replacement.replaceByFeeTx, historyTx);
+      assert.deepStrictEqual(replacement.replaceByFeeTx, historyTx);
 
       assert.strictEqual(replacement.outs[0].value, historyTx.outs[0].amount);
       assert.strictEqual(Address.fromOutputScript(replacement.outs[0].script, network), historyTx.outs[0].addr);
