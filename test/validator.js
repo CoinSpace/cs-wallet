@@ -45,8 +45,8 @@ describe('validator', () => {
         assert.throws(() => {
           validate.preCreateTx('myYBF2Yo1LUthn3eDopEWA4a6sj4UmsWzf', 546, network);
         }, (e) => {
-          assert.strictEqual(e.message, "Invalid value");
-          assert.strictEqual(e.details, "Not above dust threshold");
+          assert.strictEqual(e.message, 'Invalid value');
+          assert.strictEqual(e.details, 'Not above dust threshold');
           assert.strictEqual(e.dustThreshold, 546);
           return true;
         });
@@ -63,7 +63,7 @@ describe('validator', () => {
             builder: { inputs: { length: readOnlyWallet.maxTxInputs + 1 } },
           });
         }, (e) => {
-          assert.strictEqual(e.message, "Transaction too large");
+          assert.strictEqual(e.message, 'Transaction too large');
           return true;
         });
       });
@@ -77,7 +77,7 @@ describe('validator', () => {
             hasIncludingZeroConf: 1410000,
           });
         }, (e) => {
-          assert.strictEqual(e.message, "Insufficient funds");
+          assert.strictEqual(e.message, 'Insufficient funds');
           assert.strictEqual(e.details, undefined);
           return true;
         });
@@ -92,8 +92,8 @@ describe('validator', () => {
             hasIncludingZeroConf: 1420001,
           });
         }, (e) => {
-          assert.strictEqual(e.message, "Insufficient funds");
-          assert.strictEqual(e.details, "Additional funds confirmation pending");
+          assert.strictEqual(e.message, 'Insufficient funds');
+          assert.strictEqual(e.details, 'Additional funds confirmation pending');
           return true;
         });
       });
@@ -115,9 +115,9 @@ describe('validator', () => {
             delete utxo[field];
             validate.utxos([utxo]);
           }, (e) => {
-            const expectedMessage = field + " field";
+            const expectedMessage = field + ' field';
             assert(e.message.indexOf(expectedMessage) > 0,
-              "expect error message to contain: " + expectedMessage + ", but got: " + e.message);
+              'expect error message to contain: ' + expectedMessage + ', but got: ' + e.message);
             return true;
           });
         });
