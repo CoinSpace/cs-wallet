@@ -2,7 +2,6 @@
 
 const assert = require('assert');
 const sinon = require('sinon');
-const async = require('async');
 const Wallet = require('../');
 const { bitcoin } = Wallet;
 const { Transaction } = bitcoin;
@@ -134,48 +133,42 @@ describe('wallet', () => {
     });
   });
 
-  describe('getBalance', () => {
+  describe('get balance', () => {
     it('works', () => {
-      assert.strictEqual(readOnlyWallet.getBalance(), 0);
+      assert.strictEqual(readOnlyWallet.balance, 0);
     });
 
-    it('calculates it correctly when one of the head transactions has value 0', (done) => {
+    it('calculates it correctly when one of the head transactions has value 0', async () => {
       const myWallet = Wallet.deserialize(JSON.stringify(fixtures));
 
       sandbox.stub(myWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedAddressZero]);
 
-      fundAddressZero(myWallet, (err, fundingTx) => {
-        if (err) return done(err);
+      const fundingTx = await fundAddressZero(myWallet);
 
-        myWallet.api.transactions.get.restore();
-        sandbox.stub(myWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedChangeAddress]);
+      myWallet.api.transactions.get.restore();
+      sandbox.stub(myWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedChangeAddress]);
 
-        const tx = new Transaction();
-        tx.addInput(fundingTx.getHash(), 0);
-        tx.addOutput(Address.toOutputScript(myWallet.accounts.p2pkh.changeAddresses[0], network), 200000);
+      const tx = new Transaction();
+      tx.addInput(fundingTx.getHash(), 0);
+      tx.addOutput(Address.toOutputScript(myWallet.accounts.p2pkh.changeAddresses[0], network), 200000);
 
-        sandbox.stub(myWallet.api.transactions, 'propagate').resolves();
-        myWallet.sendTx(tx, (err) => {
-          if (err) return done(err);
-          myWallet.api.transactions.propagate.restore();
-
-          assert.strictEqual(myWallet.getBalance(), 200000);
-          done();
-        });
+      sandbox.stub(myWallet.api.transactions, 'propagate').resolves();
+      await myWallet.sendTx(tx).finally(() => {
+        myWallet.api.transactions.propagate.restore();
       });
+      assert.strictEqual(myWallet.balance, 200000);
     });
 
-    function fundAddressZero(wallet, done) {
+    async function fundAddressZero(wallet) {
       const tx = new Transaction();
       tx.addInput((new Transaction()).getHash(), 0);
       tx.addOutput(Address.toOutputScript(wallet.accounts.p2pkh.addresses[0], network), 200000);
 
       sandbox.stub(wallet.api.transactions, 'propagate').resolves();
-      wallet.sendTx(tx, (err) => {
+      await wallet.sendTx(tx).finally(() => {
         wallet.api.transactions.propagate.restore();
-        if (err) return done(err);
-        done(null, tx);
       });
+      return tx;
     }
   });
 
@@ -213,7 +206,7 @@ describe('wallet', () => {
   describe('processTx', () => {
     let tx, prevTx, externalAddress, myWallet, nextAddress, nextChangeAddress;
 
-    before((done) => {
+    before(async () => {
       externalAddress = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs';
       myWallet = Wallet.deserialize(JSON.stringify(fixtures));
       nextAddress = myWallet.getNextAddress(true);
@@ -232,13 +225,13 @@ describe('wallet', () => {
       sandbox.stub(myWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedAddressZero]);
 
       sandbox.stub(myWallet.api.transactions, 'propagate').resolves();
-      async.series([
-        function(cb) { myWallet.sendTx(prevTx, cb);},
-        function(cb) { myWallet.sendTx(tx, cb);},
-      ], (err) => {
+
+      await Promise.all([
+        myWallet.sendTx(prevTx),
+        myWallet.sendTx(tx),
+      ]).finally(() => {
         myWallet.api.transactions.propagate.restore();
         myWallet.api.transactions.get.restore();
-        done(err);
       });
     });
 
@@ -262,7 +255,7 @@ describe('wallet', () => {
         assert.strictEqual(myWallet.accounts.p2pkh.addresses.indexOf(nextAddress), expected);
       });
 
-      it('does not add the same address more than once', (done) => {
+      it('does not add the same address more than once', async () => {
         sandbox.stub(myWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedAddressZero]);
         const nextNextAddress = myWallet.getNextAddress(true);
 
@@ -275,16 +268,16 @@ describe('wallet', () => {
         bTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(true), network), 200000);
 
         sandbox.stub(myWallet.api.transactions, 'propagate').resolves();
-        async.series([
-          function(cb) { myWallet.sendTx(aTx, cb);},
-          function(cb) { myWallet.sendTx(bTx, cb);},
-        ], (err) => {
+
+        await Promise.all([
+          myWallet.sendTx(aTx),
+          myWallet.sendTx(bTx),
+        ]).finally(() => {
           myWallet.api.transactions.propagate.restore();
-          if (err) return done(err);
-          const { addresses } = myWallet.accounts.p2pkh;
-          assert.strictEqual(addresses.indexOf(nextNextAddress), addresses.length - 1);
-          done();
         });
+
+        const { addresses } = myWallet.accounts.p2pkh;
+        assert.strictEqual(addresses.indexOf(nextNextAddress), addresses.length - 1);
       });
     });
   });
@@ -476,30 +469,18 @@ describe('wallet', () => {
       sandbox.stub(readOnlyWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedChangeAddress]);
     });
 
-    it('propagates the transaction through the API', (done) => {
+    it('propagates the transaction through the API', async () => {
       sandbox.stub(readOnlyWallet.api.transactions, 'propagate').resolves();
-      readOnlyWallet.sendTx(tx, (err) => {
-        try {
-          assert.ifError(err);
-          assert(readOnlyWallet.api.transactions.propagate.calledWith(tx.toHex()));
-          done();
-        } catch (err) {
-          done(err);
-        }
-      });
+      await readOnlyWallet.sendTx(tx);
+      assert(readOnlyWallet.api.transactions.propagate.calledWith(tx.toHex()));
     });
 
-    it('invokes callback with error on error', (done) => {
+    it('invokes callback with error on error', async () => {
       const error = new Error('oops');
       sandbox.stub(readOnlyWallet.api.transactions, 'propagate').rejects(error);
-      readOnlyWallet.sendTx(tx, (err) => {
-        try {
-          assert.strictEqual(err, error);
-          done();
-        } catch (err) {
-          done(err);
-        }
-      });
+      await assert.rejects(async () => {
+        await readOnlyWallet.sendTx(tx);
+      }, error);
     });
   });
 
@@ -547,7 +528,7 @@ describe('wallet', () => {
   });
 
   describe('getImportTxOptions', () => {
-    it('works', (done) => {
+    it('works', async () => {
       const unspents = [{
         txId: 'a3fa16de242caaa97d69f2d285377a04847edbab4eec13e9ff083e14f77b71c8',
         address: 'myocNrhBsw92CAhoEksYLBEXBWiitfxi2D',
@@ -568,13 +549,11 @@ describe('wallet', () => {
       const privateKey = new bitcoin.ECPair(BigInteger.fromBuffer(node.privateKey), null, {
         network,
       });
-      readOnlyWallet.getImportTxOptions(privateKey).then((options) => {
-        assert.strictEqual(options.privateKey, privateKey);
-        assert.strictEqual(options.amount, 10000);
-        assert.strictEqual(options.unspents.length, 1);
-        assert.deepStrictEqual(options.unspents[0], unspents[0]);
-        done();
-      }).catch(done);
+      const options = await readOnlyWallet.getImportTxOptions(privateKey);
+      assert.strictEqual(options.privateKey, privateKey);
+      assert.strictEqual(options.amount, 10000);
+      assert.strictEqual(options.unspents.length, 1);
+      assert.deepStrictEqual(options.unspents[0], unspents[0]);
     });
   });
 
