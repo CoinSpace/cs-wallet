@@ -433,11 +433,23 @@ describe('wallet', () => {
     });
 
     it('calculates it correctly with single tx input', () => {
-      assert.deepStrictEqual(readOnlyWallet.estimateFees(20000), [2260]);
+      assert.deepStrictEqual(readOnlyWallet.estimateFees(20000), [{
+        default: true,
+        estimate: 2260,
+        // TODO calculate maxAmount
+        maxAmount: undefined,
+        name: 'minimum',
+      }]);
     });
 
     it('calculates it correctly with multiple tx inputs', () => {
-      assert.deepStrictEqual(readOnlyWallet.estimateFees(1020000), [5220]);
+      assert.deepStrictEqual(readOnlyWallet.estimateFees(1020000), [{
+        default: true,
+        estimate: 5220,
+        // TODO calculate maxAmount
+        maxAmount: undefined,
+        name: 'minimum',
+      }]);
     });
 
     it('calculates it correctly with utxos passed in', () => {
@@ -448,7 +460,13 @@ describe('wallet', () => {
         vout: 0,
         confirmations: 3,
       }];
-      assert.deepStrictEqual(readOnlyWallet.estimateFees(520000, utxos), [2260]);
+      assert.deepStrictEqual(readOnlyWallet.estimateFees(520000, utxos), [{
+        default: true,
+        estimate: 2260,
+        // TODO calculate maxAmount
+        maxAmount: undefined,
+        name: 'minimum',
+      }]);
     });
 
     it('throws error when unspents are invalid', () => {
