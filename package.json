@@ -1,6 +1,6 @@
 {
   "name": "@coinspace/cs-wallet",
-  "version": "0.32.0",
+  "version": "0.32.1",
   "repository": "https://github.com/CoinSpace/cs-wallet",
   "description": "",
   "main": "index.js",
