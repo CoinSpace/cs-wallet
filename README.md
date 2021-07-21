@@ -1,5 +1,4 @@
-CS-Wallet
-=========
+# CS-Wallet
 
 [![Build](https://github.com/CoinSpace/cs-wallet/actions/workflows/ci.yml/badge.svg)](https://github.com/CoinSpace/cs-wallet/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/github/v/tag/CoinSpace/cs-wallet?label=version)](https://github.com/CoinSpace/cs-wallet/releases)
