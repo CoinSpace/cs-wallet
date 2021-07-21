@@ -2,7 +2,9 @@
   "name": "@coinspace/cs-wallet",
   "version": "0.32.2",
   "repository": "https://github.com/CoinSpace/cs-wallet",
-  "description": "",
+  "description": "Wallet for Coin app",
+  "author": "Coin Crypto Wallet <support@coin.space> (https://coin.space/)",
+  "license": "MIT",
   "main": "index.js",
   "dependencies": {
     "@coinspace/bip32-utils": "^0.11.7",
