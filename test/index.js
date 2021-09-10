@@ -36,7 +36,9 @@ describe('wallet', () => {
   describe('constructor', () => {
     it('with seed', () => {
       const wallet = new Wallet({
-        networkName: 'bitcoin',
+        crypto: {
+          platform: 'bitcoin',
+        },
         seed: RANDOM_SEED,
       });
       assert.ok(wallet);
@@ -49,7 +51,9 @@ describe('wallet', () => {
         p2pkh: accounts.p2pkh.base.publicExtendedKey,
       };
       const wallet = new Wallet({
-        networkName: 'bitcoin',
+        crypto: {
+          platform: 'bitcoin',
+        },
         publicKey: JSON.stringify(publicKey),
       });
       assert.strictEqual(wallet.accounts.p2pkh.base.publicExtendedKey, accounts.p2pkh.base.publicExtendedKey);
@@ -63,7 +67,9 @@ describe('wallet', () => {
   describe('lock', () => {
     it('works', () => {
       const wallet = new Wallet({
-        networkName: 'bitcoin',
+        crypto: {
+          platform: 'bitcoin',
+        },
         seed: RANDOM_SEED,
       });
       assert.strictEqual(wallet.isLocked, false);
@@ -84,7 +90,9 @@ describe('wallet', () => {
         p2pkh: RANDOM_SEED_PUB_KEY,
       };
       const wallet = new Wallet({
-        networkName: 'bitcoin',
+        crypto: {
+          platform: 'bitcoin',
+        },
         publicKey: JSON.stringify(publicKey),
       });
       assert.strictEqual(wallet.isLocked, true);
@@ -102,7 +110,9 @@ describe('wallet', () => {
   describe('publicKey', () => {
     it('works', () => {
       const wallet = new Wallet({
-        networkName: 'bitcoin',
+        crypto: {
+          platform: 'bitcoin',
+        },
         seed: RANDOM_SEED,
       });
       const publicKey = wallet.publicKey();
@@ -111,12 +121,16 @@ describe('wallet', () => {
 
     it('key is valid', () => {
       const wallet = new Wallet({
-        networkName: 'bitcoin',
+        crypto: {
+          platform: 'bitcoin',
+        },
         seed: RANDOM_SEED,
       });
       const publicKey = wallet.publicKey();
       const secondWalet = new Wallet({
-        networkName: 'bitcoin',
+        crypto: {
+          platform: 'bitcoin',
+        },
         publicKey,
       });
       secondWalet.unlock(RANDOM_SEED);
