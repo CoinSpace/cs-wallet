@@ -23,6 +23,12 @@ describe('wallet', () => {
   const { addresses } = addressFixtures;
   const { changeAddresses } = addressFixtures;
   const sandbox = sinon.createSandbox();
+  const defaultOptions = {
+    crypto: {
+      platform: 'bitcoin',
+    },
+    cache: { get: () => {}, has: () => {}, set: () => {}, unset: () => {} },
+  };
 
   beforeEach(() => {
     // this should be treated as a convenient read-only wallet
@@ -36,9 +42,7 @@ describe('wallet', () => {
   describe('constructor', () => {
     it('with seed', () => {
       const wallet = new Wallet({
-        crypto: {
-          platform: 'bitcoin',
-        },
+        ...defaultOptions,
         seed: RANDOM_SEED,
       });
       assert.ok(wallet);
@@ -51,9 +55,7 @@ describe('wallet', () => {
         p2pkh: accounts.p2pkh.base.publicExtendedKey,
       };
       const wallet = new Wallet({
-        crypto: {
-          platform: 'bitcoin',
-        },
+        ...defaultOptions,
         publicKey: JSON.stringify(publicKey),
       });
       assert.strictEqual(wallet.accounts.p2pkh.base.publicExtendedKey, accounts.p2pkh.base.publicExtendedKey);
@@ -67,9 +69,7 @@ describe('wallet', () => {
   describe('lock', () => {
     it('works', () => {
       const wallet = new Wallet({
-        crypto: {
-          platform: 'bitcoin',
-        },
+        ...defaultOptions,
         seed: RANDOM_SEED,
       });
       assert.strictEqual(wallet.isLocked, false);
@@ -90,9 +90,7 @@ describe('wallet', () => {
         p2pkh: RANDOM_SEED_PUB_KEY,
       };
       const wallet = new Wallet({
-        crypto: {
-          platform: 'bitcoin',
-        },
+        ...defaultOptions,
         publicKey: JSON.stringify(publicKey),
       });
       assert.strictEqual(wallet.isLocked, true);
@@ -110,9 +108,7 @@ describe('wallet', () => {
   describe('publicKey', () => {
     it('works', () => {
       const wallet = new Wallet({
-        crypto: {
-          platform: 'bitcoin',
-        },
+        ...defaultOptions,
         seed: RANDOM_SEED,
       });
       const publicKey = wallet.publicKey();
@@ -121,16 +117,12 @@ describe('wallet', () => {
 
     it('key is valid', () => {
       const wallet = new Wallet({
-        crypto: {
-          platform: 'bitcoin',
-        },
+        ...defaultOptions,
         seed: RANDOM_SEED,
       });
       const publicKey = wallet.publicKey();
       const secondWalet = new Wallet({
-        crypto: {
-          platform: 'bitcoin',
-        },
+        ...defaultOptions,
         publicKey,
       });
       secondWalet.unlock(RANDOM_SEED);
