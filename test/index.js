@@ -27,7 +27,7 @@ describe('wallet', () => {
     crypto: {
       platform: 'bitcoin',
     },
-    cache: { get: () => {}, has: () => {}, set: () => {}, unset: () => {} },
+    cache: { get: () => {}, set: () => {} },
   };
 
   beforeEach(() => {
