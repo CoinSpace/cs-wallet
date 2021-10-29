@@ -180,7 +180,7 @@ describe('wallet', () => {
 
   describe('getNextAddress', () => {
     it('works', () => {
-      assert.deepStrictEqual(readOnlyWallet.getNextAddress(true), 'mr7dXSfei5TQPmkJhA6cLmrwnhihaqbCUy');
+      assert.deepStrictEqual(readOnlyWallet.getNextAddress({ oldFormat: true }), 'mr7dXSfei5TQPmkJhA6cLmrwnhihaqbCUy');
     });
   });
 
@@ -215,7 +215,7 @@ describe('wallet', () => {
     before(async () => {
       externalAddress = 'mh8evwuteapNy7QgSDWeUXTGvFb4mN1qvs';
       myWallet = Wallet.deserialize(JSON.stringify(fixtures));
-      nextAddress = myWallet.getNextAddress(true);
+      nextAddress = myWallet.getNextAddress({ oldFormat: true });
 
       nextChangeAddress = myWallet.getNextChangeAddress();
 
@@ -263,15 +263,15 @@ describe('wallet', () => {
 
       it('does not add the same address more than once', async () => {
         sandbox.stub(myWallet.api.transactions, 'get').resolves([transactionsFixtures.fundedAddressZero]);
-        const nextNextAddress = myWallet.getNextAddress(true);
+        const nextNextAddress = myWallet.getNextAddress({ oldFormat: true });
 
         const aTx = new Transaction();
         aTx.addInput((new Transaction()).getHash(), 1);
-        aTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(true), network), 200000);
+        aTx.addOutput(Address.toOutputScript(myWallet.getNextAddress({ oldFormat: true }), network), 200000);
 
         const bTx = new Transaction();
         bTx.addInput((new Transaction()).getHash(), 2);
-        bTx.addOutput(Address.toOutputScript(myWallet.getNextAddress(true), network), 200000);
+        bTx.addOutput(Address.toOutputScript(myWallet.getNextAddress({ oldFormat: true }), network), 200000);
 
         sandbox.stub(myWallet.api.transactions, 'propagate').resolves();
 
