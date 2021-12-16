@@ -441,7 +441,7 @@ describe('wallet', () => {
     it('calculates it correctly with single tx input', () => {
       assert.deepStrictEqual(readOnlyWallet.estimateFees(20000), [{
         default: true,
-        estimate: 2260,
+        estimate: 2350,
         // TODO calculate maxAmount
         maxAmount: undefined,
         name: 'minimum',
@@ -451,7 +451,7 @@ describe('wallet', () => {
     it('calculates it correctly with multiple tx inputs', () => {
       assert.deepStrictEqual(readOnlyWallet.estimateFees(1020000), [{
         default: true,
-        estimate: 5220,
+        estimate: 5310,
         // TODO calculate maxAmount
         maxAmount: undefined,
         name: 'minimum',
@@ -600,7 +600,7 @@ describe('wallet', () => {
       }, 0);
       const outgoing = replacement.outs.reduce((a, x) => { return a + x.value; }, 0);
       const fee = incoming - outgoing;
-      const size = replacement.ins.length * 148 + replacement.outs.length * 34 + 10;
+      const size = replacement.ins.length * 148 + replacement.outs.length * 34 + 10; // not right
       return Math.ceil(fee / size);
     }
 
