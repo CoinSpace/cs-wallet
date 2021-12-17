@@ -1,6 +1,6 @@
 {
   "name": "@coinspace/cs-wallet",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "repository": "https://github.com/CoinSpace/cs-wallet",
   "description": "Wallet for Coin app",
   "author": "Coin Crypto Wallet <support@coin.space> (https://coin.space/)",
