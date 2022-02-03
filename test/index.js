@@ -459,14 +459,14 @@ describe('wallet', () => {
     });
 
     it('calculates it correctly with utxos passed in', () => {
-      const utxos = [{
+      const unspents = [{
         txId: '98440fe7035aaec39583f68a251602a5623d34f95dbd9f54e7bc8ff29551729f',
         address: 'n2rvmEac7zD1iknp7nkFfmqXM1pbbAoctw',
         value: 1520000,
         vout: 0,
         confirmations: 3,
       }];
-      assert.deepStrictEqual(readOnlyWallet.estimateFees(520000, utxos), [{
+      assert.deepStrictEqual(readOnlyWallet.estimateFees(520000, { unspents }), [{
         default: true,
         estimate: 2260,
         // TODO calculate maxAmount
@@ -477,7 +477,7 @@ describe('wallet', () => {
 
     it('throws error when unspents are invalid', () => {
       assert.throws(() => {
-        readOnlyWallet.estimateFees(20000, 20000, [10000], 300);
+        readOnlyWallet.estimateFees(20000, { unspents: 20000 }, [10000], 300);
       }, (e) => {
         assert.strictEqual(e.message, 'Expect utxos to be an array');
         return true;
