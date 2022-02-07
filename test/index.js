@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 'use strict';
 
 const assert = require('assert');
@@ -13,22 +14,31 @@ const addressFixtures = require('./addresses');
 const transactionsFixtures = require('./transactions');
 const wif = require('wif');
 const BigInteger = require('bigi');
-// eslint-disable-next-line max-len
 const RANDOM_SEED = '2b48a48a752f6c49772bf97205660411cd2163fe6ce2de19537e9c94d3648c85c0d7f405660c20253115aaf1799b1c41cdd62b4cfbb6845bc9475495fc64b874';
-// eslint-disable-next-line max-len
-const RANDOM_SEED_PUB_KEY = 'tpubD8X9JnC6UVearYMvty3RNHgeboMFEnRusUoD5uHixU3RosJxwHg4jZGpwSnhB9mfjaFbzpyJMzpGPaxM146RWMEVRtjVVMQvv2JqPgJbKLh';
+const RANDOM_SEED_PUB_KEY = {
+  p2pkh: 'tpubD8X9JnC6UVearYMvty3RNHgeboMFEnRusUoD5uHixU3RosJxwHg4jZGpwSnhB9mfjaFbzpyJMzpGPaxM146RWMEVRtjVVMQvv2JqPgJbKLh',
+  p2sh: 'tpubDCMx2SbjiwJmq4kpRWNde5ZFTiHdeKJbrBtv7PttFXYSoNBzxkRD9K6nLhb9mYdmhWtghNqVsAqYn5NaoLiCa2ognG3tYpa8Kc8qmjh2YjA',
+  p2wpkh: 'tpubDDEcPY1jTWCnFcrJoBdQxst38MXPLZHZ3uttVbX8rNddzJrrUAhQAzmYfAsJxS85q5QRXnLmbMhZPDjjB1DvoCfMQWh5c6Sx2Liyw3Hsqr8',
+};
+const RANDOM_SEED_PUB_KEY_FIXEDBEP44 = {
+  ...RANDOM_SEED_PUB_KEY,
+  p2pkh: 'tpubDDmETRUCfp7xTnk3Sw15ZVw1BRUFPKpHQTNeUuupEG42YW6fx7CwQjvh2SEwBcdqTMY2nGjRvZCUomP5yuBbZSXDFj3BoPPr4t1cpyD2Azr',
+};
 
 describe('wallet', () => {
   let readOnlyWallet;
   const { addresses } = addressFixtures;
   const { changeAddresses } = addressFixtures;
   const sandbox = sinon.createSandbox();
-  const defaultOptions = {
-    crypto: {
-      platform: 'bitcoin',
-    },
-    cache: { get: () => {}, set: () => {} },
-  };
+  function getWalletOptions() {
+    return {
+      crypto: {
+        platform: 'bitcoin',
+      },
+      cache: { get: () => {}, set: () => {} },
+      settings: {},
+    };
+  }
 
   beforeEach(() => {
     // this should be treated as a convenient read-only wallet
@@ -42,11 +52,29 @@ describe('wallet', () => {
   describe('constructor', () => {
     it('with seed', () => {
       const wallet = new Wallet({
-        ...defaultOptions,
+        ...getWalletOptions(),
         seed: RANDOM_SEED,
       });
       assert.ok(wallet);
       assert.strictEqual(wallet.isLocked, false);
+      assert.strictEqual(wallet.settings.bip44, "m/0'");
+      assert.strictEqual(wallet.accounts.p2pkh.base.publicExtendedKey, RANDOM_SEED_PUB_KEY.p2pkh);
+      assert.strictEqual(wallet.accounts.p2sh.base.publicExtendedKey, RANDOM_SEED_PUB_KEY.p2sh);
+      assert.strictEqual(wallet.accounts.p2wpkh.base.publicExtendedKey, RANDOM_SEED_PUB_KEY.p2wpkh);
+    });
+
+    it('with seed (fixed bip44)', () => {
+      const wallet = new Wallet({
+        ...getWalletOptions(),
+        seed: RANDOM_SEED,
+        fixbip44: true,
+      });
+      assert.ok(wallet);
+      assert.strictEqual(wallet.isLocked, false);
+      assert.strictEqual(wallet.settings.bip44, "m/44'/1'/0'");
+      assert.strictEqual(wallet.accounts.p2pkh.base.publicExtendedKey, RANDOM_SEED_PUB_KEY_FIXEDBEP44.p2pkh);
+      assert.strictEqual(wallet.accounts.p2sh.base.publicExtendedKey, RANDOM_SEED_PUB_KEY_FIXEDBEP44.p2sh);
+      assert.strictEqual(wallet.accounts.p2wpkh.base.publicExtendedKey, RANDOM_SEED_PUB_KEY_FIXEDBEP44.p2wpkh);
     });
 
     it('with publicKey', () => {
@@ -55,21 +83,21 @@ describe('wallet', () => {
         p2pkh: accounts.p2pkh.base.publicExtendedKey,
       };
       const wallet = new Wallet({
-        ...defaultOptions,
+        ...getWalletOptions(),
         publicKey: JSON.stringify(publicKey),
       });
+      assert.ok(wallet);
+      assert.strictEqual(wallet.isLocked, true);
       assert.strictEqual(wallet.accounts.p2pkh.base.publicExtendedKey, accounts.p2pkh.base.publicExtendedKey);
       assert.strictEqual(wallet.accounts.p2sh.base.publicExtendedKey, accounts.p2pkh.base.publicExtendedKey);
       assert.strictEqual(wallet.accounts.p2wpkh.base.publicExtendedKey, accounts.p2pkh.base.publicExtendedKey);
-      assert.strictEqual(wallet.isLocked, true);
-      assert.ok(wallet);
     });
   });
 
   describe('lock', () => {
     it('works', () => {
       const wallet = new Wallet({
-        ...defaultOptions,
+        ...getWalletOptions(),
         seed: RANDOM_SEED,
       });
       assert.strictEqual(wallet.isLocked, false);
@@ -86,12 +114,9 @@ describe('wallet', () => {
 
   describe('unlock', () => {
     it('works', () => {
-      const publicKey = {
-        p2pkh: RANDOM_SEED_PUB_KEY,
-      };
       const wallet = new Wallet({
-        ...defaultOptions,
-        publicKey: JSON.stringify(publicKey),
+        ...getWalletOptions(),
+        publicKey: JSON.stringify(RANDOM_SEED_PUB_KEY),
       });
       assert.strictEqual(wallet.isLocked, true);
       wallet.unlock(RANDOM_SEED);
@@ -108,7 +133,7 @@ describe('wallet', () => {
   describe('publicKey', () => {
     it('works', () => {
       const wallet = new Wallet({
-        ...defaultOptions,
+        ...getWalletOptions(),
         seed: RANDOM_SEED,
       });
       const publicKey = wallet.publicKey();
@@ -117,12 +142,12 @@ describe('wallet', () => {
 
     it('key is valid', () => {
       const wallet = new Wallet({
-        ...defaultOptions,
+        ...getWalletOptions(),
         seed: RANDOM_SEED,
       });
       const publicKey = wallet.publicKey();
       const secondWalet = new Wallet({
-        ...defaultOptions,
+        ...getWalletOptions(),
         publicKey,
       });
       secondWalet.unlock(RANDOM_SEED);
