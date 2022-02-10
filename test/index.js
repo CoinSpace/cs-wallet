@@ -36,7 +36,6 @@ describe('wallet', () => {
         platform: 'bitcoin',
       },
       cache: { get: () => {}, set: () => {} },
-      settings: {},
     };
   }
 
@@ -67,7 +66,11 @@ describe('wallet', () => {
       const wallet = new Wallet({
         ...getWalletOptions(),
         seed: RANDOM_SEED,
-        fixbip44: true,
+        settings: {
+          bip44: "m/44'/1'/0'",
+          bip49: "m/49'/1'/0'",
+          bip84: "m/84'/1'/0'",
+        },
       });
       assert.ok(wallet);
       assert.strictEqual(wallet.isLocked, false);
